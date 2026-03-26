@@ -34,12 +34,30 @@ class EventService {
         return this._formatEventForResponse(newEvent, data.timezone);
     }
 
-    async getEventsForProfile(profileId, targetTimezone) {
+    async getEventsForProfile(profileId, targetTimezone, page = 1, limit = 10) {
         if (!targetTimezone) throw createError('targetTimezone is required', 400);
 
-        const events = await eventRepository.findByProfileId(profileId);
+        const skip = (page - 1) * limit;
 
-        return events.map(event => this._formatEventForResponse(event, targetTimezone));
+        // If profileId is provided, filter by it our fetch all.
+        let result;
+        if (profileId) {
+            result = await eventRepository.findByProfileId(profileId, skip, limit);
+        } else {
+            result = await eventRepository.findAllEvents(skip, limit);
+        }
+
+        const events = result.data.map(event => this._formatEventForResponse(event, targetTimezone));
+
+        return {
+            events,
+            pagination: {
+                total: result.total,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                totalPages: Math.ceil(result.total / limit)
+            }
+        };
     }
 
     async getEventById(id, targetTimezone) {
