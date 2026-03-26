@@ -1,5 +1,5 @@
 const morgan = require('morgan');
-const logger = require('../utils/logger');
+const { logger } = require('../utils/logger');
 
 const logFormat = ':remote-addr - [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] - :response-time ms';
 

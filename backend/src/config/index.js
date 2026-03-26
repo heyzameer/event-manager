@@ -1,6 +1,6 @@
 const Joi = require("joi");
 
-const envScheme = Joi.object({
+const envSchema = Joi.object({
     NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
     PORT: Joi.number().default(5000),
     MONGODB_URI: Joi.string().required(),

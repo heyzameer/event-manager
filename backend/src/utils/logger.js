@@ -13,8 +13,11 @@ const logger = winston.createLogger({
     transports: [
         new winston.transports.Console({
             format: winston.format.combine(
-                winston.format.colorize(),
-                winston.format.simple()
+                winston.format.colorize({ all: true }),
+                winston.format.timestamp({ format: 'HH:mm:ss' }),
+                winston.format.printf(({ timestamp, level, message }) => {
+                    return `[${level}] ${timestamp} ${message}`;
+                })
             ),
         }),
         new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
