@@ -3,10 +3,13 @@ import api from '../services/api';
 
 export const fetchEventsForProfile = createAsyncThunk(
     'events/fetchEventsForProfile',
-    async ({ profileId, timezone }, { rejectWithValue }) => {
+    async ({ profileId, timezone, page = 1, limit = 10 }, { rejectWithValue }) => {
         try {
-            const response = await api.get(`/events?profileId=${profileId}&timezone=${timezone}`);
-            return response.data.events;
+            const response = await api.get('/events', { 
+                params: { profileId, timezone, page, limit } 
+            });
+            // Backend returns { events: [], pagination: {} }
+            return response.data; 
         } catch (error) {
             return rejectWithValue(error.message);
         }
@@ -17,6 +20,7 @@ const eventsSlice = createSlice({
     name: 'events',
     initialState: {
         list: [],
+        pagination: { total: 0, page: 1, limit: 10, totalPages: 0 },
         viewTimezone: localStorage.getItem('viewTimezone') || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
         loading: false,
         error: null,
@@ -34,7 +38,8 @@ const eventsSlice = createSlice({
             })
             .addCase(fetchEventsForProfile.fulfilled, (state, action) => {
                 state.loading = false;
-                state.list = action.payload;
+                state.list = action.payload.events || [];
+                state.pagination = action.payload.pagination || state.pagination;
             })
             .addCase(fetchEventsForProfile.rejected, (state, action) => {
                 state.loading = false;
