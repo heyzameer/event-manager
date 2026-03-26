@@ -92,7 +92,7 @@ class EventService {
 
         await eventLogService.logChanges(id, updatedBy, oldEvent, updateData);
 
-        const updatedEvent = await eventRepository.update(id, updateData);
+        const updatedEvent = await eventRepository.update(id, { ...updateData, updatedBy });
 
         return this._formatEventForResponse(updatedEvent, targetTimezone);
     }

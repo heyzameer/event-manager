@@ -26,6 +26,10 @@ const eventSchema = new mongoose.Schema({
     createdBy: {
         type: String,
         required: true,
+    },
+    updatedBy: {
+        type: String,
+        default: null
     }
 }, {
     timestamps: true

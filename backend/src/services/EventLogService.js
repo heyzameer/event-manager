@@ -6,7 +6,7 @@ class EventLogService {
     async logChanges(eventId, updatedBy, oldEvent, newEventData) {
         const changes = [];
 
-        const fieldsToCheck = ['title', 'timezone', 'startTime', 'endTime'];
+        const fieldsToCheck = ['title', 'timezone', 'startTime', 'endTime', 'profiles'];
 
         for (const field of fieldsToCheck) {
             if (newEventData[field] && newEventData[field] !== oldEvent[field]?.toISOString?.() && newEventData[field] !== oldEvent[field]) {
