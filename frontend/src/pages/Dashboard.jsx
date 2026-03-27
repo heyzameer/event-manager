@@ -37,6 +37,22 @@ export default function Dashboard() {
     const [logSearch, setLogSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
 
+    // Check if Edit Form has actual changes
+    const hasEditChanges = React.useMemo(() => {
+        if (!activeEvent || modalMode !== 'edit') return false;
+        
+        const currentProfiles = activeEvent.profiles?.map(p => p._id || p.id || p) || [];
+        const profilesChanged = JSON.stringify([...currentProfiles].sort()) !== JSON.stringify([...editForm.profileIds].sort());
+        
+        const startISO = `${editForm.startDate}T${editForm.startTime}`;
+        const endISO = `${editForm.endDate}T${editForm.endTime}`;
+        
+        return editForm.title !== activeEvent.title ||
+               profilesChanged ||
+               new Date(startISO).getTime() !== new Date(activeEvent.startTime).getTime() ||
+               new Date(endISO).getTime() !== new Date(activeEvent.endTime).getTime();
+    }, [editForm, activeEvent, modalMode]);
+
     // Debounce Logic
     useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearch(logSearch), 300);
@@ -66,7 +82,23 @@ export default function Dashboard() {
         createdBy: ''
     });
 
-    const today = dayjs().format('YYYY-MM-DD');
+    // Sync form date/time with selected timezone if they are empty
+    useEffect(() => {
+        if (!formData.startDate || !formData.startTime) {
+            const nowInTZ = dayjs().tz(formData.creationTimezone);
+            setFormData(prev => ({
+                ...prev,
+                startDate: prev.startDate || nowInTZ.format('YYYY-MM-DD'),
+                startTime: prev.startTime || nowInTZ.format('HH:mm'),
+                // Default end time to 1 hour later
+                endDate: prev.endDate || nowInTZ.add(1, 'hour').format('YYYY-MM-DD'),
+                endTime: prev.endTime || nowInTZ.add(1, 'hour').format('HH:mm')
+            }));
+        }
+    }, [formData.creationTimezone]);
+
+    // Calculate "today" based on the selected creation timezone to allow correct date picking
+    const today = dayjs().tz(formData.creationTimezone).format('YYYY-MM-DD');
 
     useEffect(() => {
         dispatch(fetchProfiles());
@@ -189,9 +221,9 @@ export default function Dashboard() {
     };
 
     return (
-        <div style={{ padding: '2rem 4rem', maxWidth: '1400px', margin: '0 auto' }}>
+        <div className="dashboard-container">
             
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3rem' }}>
+            <header className="dashboard-header">
                 <div>
                     <h1 style={{ fontSize: '2rem', color: 'var(--text-primary)', marginBottom: '0.5rem', fontWeight: 700 }}>Event Management</h1>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem' }}>Create and manage events across multiple timezones</p>
@@ -213,7 +245,7 @@ export default function Dashboard() {
                 </div>
             </header>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(400px, 1fr) 1.2fr', gap: '3rem', alignItems: 'start' }}>
+            <div className="dashboard-grid">
                 
                 {/* Left Column: Create Event */}
                 <div className="glass-panel" style={{ height: '780px', display: 'flex', flexDirection: 'column' }}>
@@ -292,7 +324,7 @@ export default function Dashboard() {
                     <h3 style={{ fontSize: '1.4rem', marginBottom: '1.5rem', fontWeight: 600 }}>Active Events</h3>
                     
                     {/* Sticky Timezone Selector */}
-                    <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--surface-color)', backdropFilter: 'var(--glass-blur)', margin: '-1.5rem -2rem 1rem -2rem', padding: '1.5rem 2rem', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                    <div className="sticky-timezone-header">
                         <SearchableSelect 
                             label="View in Timezone"
                             options={STANDARD_TIMEZONES.map(t => t.label)}
@@ -447,7 +479,7 @@ export default function Dashboard() {
                         
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
                             <Button type="button" variant="secondary" onClick={() => setModalMode(null)}>Cancel</Button>
-                            <Button type="submit" variant="primary">Save Changes</Button>
+                            <Button type="submit" variant="primary" disabled={!hasEditChanges}>Save Changes</Button>
                         </div>
                     </form>
                 )}

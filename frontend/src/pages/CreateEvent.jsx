@@ -7,6 +7,8 @@ import Input from '../components/Input';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { fetchEventsForProfile } from '../store/eventsSlice';
+import dayjs from 'dayjs';
+import { STANDARD_TIMEZONES } from '../config/timezones';
 
 export default function CreateEvent() {
     const navigate = useNavigate();
@@ -17,10 +19,29 @@ export default function CreateEvent() {
 
     const [formData, setFormData] = useState({
         title: '',
+        startDate: '',
         startTime: '',
+        endDate: '',
         endTime: '',
         createdBy: ''
     });
+
+    // Sync form date/time with selected timezone if they are empty
+    useEffect(() => {
+        if (!formData.startDate || !formData.startTime) {
+            const nowInTZ = dayjs().tz(viewTimezone);
+            setFormData(prev => ({
+                ...prev,
+                startDate: prev.startDate || nowInTZ.format('YYYY-MM-DD'),
+                startTime: prev.startTime || nowInTZ.format('HH:mm'),
+                // Default end time to 1 hour later
+                endDate: prev.endDate || nowInTZ.add(1, 'hour').format('YYYY-MM-DD'),
+                endTime: prev.endTime || nowInTZ.add(1, 'hour').format('HH:mm')
+            }));
+        }
+    }, [viewTimezone]);
+
+    const today = dayjs().tz(viewTimezone).format('YYYY-MM-DD');
 
     const handleChange = (e) => setFormData({ ...formData, [e.target.id]: e.target.value });
 
@@ -31,15 +52,21 @@ export default function CreateEvent() {
             return;
         }
 
+        const startLocal = `${formData.startDate}T${formData.startTime}`;
+        const endLocal = `${formData.endDate}T${formData.endTime}`;
+
+        if (new Date(endLocal) <= new Date(startLocal)) {
+            toast.error('End time must be after start time');
+            return;
+        }
+
         try {
-            // Send the request. We attach the currently selected timezone so the backend knows how to convert the local time!
             await api.post('/events', {
                 title: formData.title,
                 profiles: [selectedProfileId],
                 timezone: viewTimezone,
-                // Convert the HTML local datetime string into a proper JS Date ISO string before sending
-                startTime: new Date(formData.startTime).toISOString(),
-                endTime: new Date(formData.endTime).toISOString(),
+                startTime: startLocal,
+                endTime: endLocal,
                 createdBy: formData.createdBy
             });
 
@@ -76,16 +103,35 @@ export default function CreateEvent() {
                         />
 
                         <div style={{ display: 'flex', gap: '1rem' }}>
-                            <div style={{ flex: 1 }}>
-                                <Input
-                                    id="startTime" type="datetime-local" label={`Start Time (${viewTimezone})`} required
-                                    value={formData.startTime} onChange={handleChange}
+                            <div style={{ flex: 1.5 }}>
+                                <label className="input-label" style={{ display: 'block', marginBottom: '8px' }}>Start Date</label>
+                                <input 
+                                    className="input-field" type="date" required id="startDate" min={today}
+                                    value={formData.startDate} onChange={handleChange} 
                                 />
                             </div>
                             <div style={{ flex: 1 }}>
-                                <Input
-                                    id="endTime" type="datetime-local" label={`End Time (${viewTimezone})`} required
-                                    value={formData.endTime} onChange={handleChange}
+                                <label className="input-label" style={{ display: 'block', marginBottom: '8px' }}>Time</label>
+                                <input 
+                                    className="input-field" type="time" required id="startTime"
+                                    value={formData.startTime} onChange={handleChange} 
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                            <div style={{ flex: 1.5 }}>
+                                <label className="input-label" style={{ display: 'block', marginBottom: '8px' }}>End Date</label>
+                                <input 
+                                    className="input-field" type="date" required id="endDate" min={formData.startDate || today}
+                                    value={formData.endDate} onChange={handleChange} 
+                                />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <label className="input-label" style={{ display: 'block', marginBottom: '8px' }}>Time</label>
+                                <input 
+                                    className="input-field" type="time" required id="endTime"
+                                    value={formData.endTime} onChange={handleChange} 
                                 />
                             </div>
                         </div>

@@ -36,7 +36,8 @@ export default function EventDetails() {
     });
 
     const timezones = Intl.supportedValuesOf('timeZone');
-    const today = dayjs().format('YYYY-MM-DD');
+    // Calculate "today" based on the selected creation timezone to allow correct date picking
+    const today = dayjs().tz(viewTimezone).format('YYYY-MM-DD');
 
     // Load the single event and its logs
     const fetchEventAndLogs = async () => {
@@ -50,10 +51,10 @@ export default function EventDetails() {
             
             setEditForm({
                 title: resEvent.data.title,
-                startDate: dayjs(resEvent.data.startTime).format('YYYY-MM-DD'),
-                startTime: dayjs(resEvent.data.startTime).format('HH:mm'),
-                endDate: dayjs(resEvent.data.endTime).format('YYYY-MM-DD'),
-                endTime: dayjs(resEvent.data.endTime).format('HH:mm'),
+                startDate: dayjs(resEvent.data.startTime).tz(viewTimezone).format('YYYY-MM-DD'),
+                startTime: dayjs(resEvent.data.startTime).tz(viewTimezone).format('HH:mm'),
+                endDate: dayjs(resEvent.data.endTime).tz(viewTimezone).format('YYYY-MM-DD'),
+                endTime: dayjs(resEvent.data.endTime).tz(viewTimezone).format('HH:mm'),
                 profileIds: resEvent.data.profiles || [],
                 updatedBy: ''
             });
@@ -73,10 +74,10 @@ export default function EventDetails() {
             return;
         }
 
-        const startISO = new Date(`${editForm.startDate}T${editForm.startTime}`).toISOString();
-        const endISO = new Date(`${editForm.endDate}T${editForm.endTime}`).toISOString();
+        const startLocal = `${editForm.startDate}T${editForm.startTime}`;
+        const endLocal = `${editForm.endDate}T${editForm.endTime}`;
 
-        if (new Date(endISO) <= new Date(startISO)) {
+        if (new Date(endLocal) <= new Date(startLocal)) {
             toast.error('End time must be after start time');
             return;
         }
@@ -84,8 +85,8 @@ export default function EventDetails() {
         try {
             await api.put(`/events/${id}`, {
                 title: editForm.title,
-                startTime: startISO,
-                endTime: endISO,
+                startTime: startLocal,
+                endTime: endLocal,
                 profiles: editForm.profileIds,
                 timezone: viewTimezone,
                 updatedBy: editForm.updatedBy
@@ -195,10 +196,10 @@ export default function EventDetails() {
                                 </div>
                                 <div>
                                     <p style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
-                                        {dayjs(eventData.startTime).format('dddd, MMMM D, YYYY')}
+                                        {dayjs(eventData.startTime).tz(viewTimezone).format('dddd, MMMM D, YYYY')}
                                     </p>
                                     <p style={{ fontSize: '1.1rem', color: 'var(--primary-color)', fontWeight: 500 }}>
-                                        {dayjs(eventData.startTime).format('h:mm A')} — {dayjs(eventData.endTime).format('h:mm A')}
+                                        {dayjs(eventData.startTime).tz(viewTimezone).format('h:mm A')} — {dayjs(eventData.endTime).tz(viewTimezone).format('h:mm A')}
                                     </p>
                                     <p style={{ marginTop: '0.8rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                                         Viewing in <strong>{viewTimezone}</strong>

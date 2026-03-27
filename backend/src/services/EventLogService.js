@@ -9,11 +9,25 @@ class EventLogService {
         const fieldsToCheck = ['title', 'timezone', 'startTime', 'endTime', 'profiles'];
 
         for (const field of fieldsToCheck) {
-            if (newEventData[field] && newEventData[field] !== oldEvent[field]?.toISOString?.() && newEventData[field] !== oldEvent[field]) {
+            let changed = false;
+            let oldVal = oldEvent[field];
+            let newVal = newEventData[field];
+
+            if (field === 'profiles') {
+                const oldIds = (oldVal || []).map(p => (p._id || p.id || p).toString()).sort();
+                const newIds = (newVal || []).map(p => p.toString()).sort();
+                changed = JSON.stringify(oldIds) !== JSON.stringify(newIds);
+            } else if (['startTime', 'endTime'].includes(field)) {
+                changed = new Date(oldVal).getTime() !== new Date(newVal).getTime();
+            } else {
+                changed = oldVal !== newVal;
+            }
+
+            if (changed) {
                 changes.push({
                     field,
-                    oldValue: oldEvent[field],
-                    newValue: newEventData[field]
+                    oldValue: oldVal,
+                    newValue: newVal
                 });
             }
         }
