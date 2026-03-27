@@ -1,4 +1,5 @@
 const eventLogRepository = require('../repositories/EventLogRepository');
+const Profile = require('../models/Profile');
 const { toUserTZ } = require('../utils/timezone');
 const { createError } = require('../utils/errorHandler');
 
@@ -17,6 +18,18 @@ class EventLogService {
                 const oldIds = (oldVal || []).map(p => (p._id || p.id || p).toString()).sort();
                 const newIds = (newVal || []).map(p => p.toString()).sort();
                 changed = JSON.stringify(oldIds) !== JSON.stringify(newIds);
+
+                if (changed) {
+                    const currentProfiles = await Profile.find({ _id: { $in: newVal } });
+                    const profileNames = currentProfiles.map(p => p.name).join(', ');
+
+                    changes.push({
+                        field,
+                        oldValue: oldIds.length + " profiles",
+                        newValue: profileNames
+                    });
+                    continue;
+                }
             } else if (['startTime', 'endTime'].includes(field)) {
                 changed = new Date(oldVal).getTime() !== new Date(newVal).getTime();
             } else {

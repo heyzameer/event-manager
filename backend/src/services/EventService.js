@@ -2,6 +2,7 @@ const eventRepository = require('../repositories/EventRepository');
 const eventLogService = require('./EventLogService');
 const { convertToUTC, toUserTZ } = require('../utils/timezone');
 const { createError } = require('../utils/errorHandler');
+const { logger } = require('../utils/logger');
 
 class EventService {
 
@@ -17,6 +18,7 @@ class EventService {
     }
 
     async createEvent(data) {
+        logger.info('DEBUG: createEvent data: ' + JSON.stringify(data));
 
         const utcStart = convertToUTC(data.startTime, data.timezone);
         const utcEnd = convertToUTC(data.endTime, data.timezone);

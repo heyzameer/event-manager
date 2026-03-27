@@ -32,7 +32,16 @@ export default function Dashboard() {
     // Action Modals State
     const [activeEvent, setActiveEvent] = useState(null);
     const [modalMode, setModalMode] = useState(null); // 'edit', 'logs', 'participants'
-    const [editForm, setEditForm] = useState({ title: '', startDate: '', startTime: '', endDate: '', endTime: '', profileIds: [], updatedBy: '' });
+    const [editForm, setEditForm] = useState({ 
+        title: '', 
+        startDate: '', 
+        startTime: '', 
+        endDate: '', 
+        endTime: '', 
+        profileIds: [], 
+        referenceTimezone: 'UTC',
+        updatedBy: '' 
+    });
     const [eventLogs, setEventLogs] = useState([]);
     const [logSearch, setLogSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -40,17 +49,18 @@ export default function Dashboard() {
     // Check if Edit Form has actual changes
     const hasEditChanges = React.useMemo(() => {
         if (!activeEvent || modalMode !== 'edit') return false;
-        
+
         const currentProfiles = activeEvent.profiles?.map(p => p._id || p.id || p) || [];
         const profilesChanged = JSON.stringify([...currentProfiles].sort()) !== JSON.stringify([...editForm.profileIds].sort());
-        
+
         const startISO = `${editForm.startDate}T${editForm.startTime}`;
         const endISO = `${editForm.endDate}T${editForm.endTime}`;
-        
+
         return editForm.title !== activeEvent.title ||
-               profilesChanged ||
-               new Date(startISO).getTime() !== new Date(activeEvent.startTime).getTime() ||
-               new Date(endISO).getTime() !== new Date(activeEvent.endTime).getTime();
+            profilesChanged ||
+            editForm.referenceTimezone !== activeEvent.timezone ||
+            new Date(startISO).getTime() !== new Date(activeEvent.startTime).getTime() ||
+            new Date(endISO).getTime() !== new Date(activeEvent.endTime).getTime();
     }, [editForm, activeEvent, modalMode]);
 
     // Debounce Logic
@@ -132,7 +142,7 @@ export default function Dashboard() {
             setNewProfileName('');
             setIsProfileModalOpen(false);
             toast.success('Profile created!');
-        } catch (err) {}
+        } catch (err) { }
     };
 
     const handleCreateEvent = async (e) => {
@@ -149,7 +159,7 @@ export default function Dashboard() {
         const startLocal = `${formData.startDate}T${formData.startTime}`;
         const endLocal = `${formData.endDate}T${formData.endTime}`;
 
-        if (new Date(endLocal) <= new Date(startLocal)) {
+        if (dayjs(endLocal).isBefore(dayjs(startLocal)) || dayjs(endLocal).isSame(dayjs(startLocal))) {
             toast.error('End time must be after start time');
             return;
         }
@@ -161,7 +171,7 @@ export default function Dashboard() {
                 timezone: formData.creationTimezone,
                 startTime: startLocal,
                 endTime: endLocal,
-                createdBy: formData.createdBy 
+                createdBy: formData.createdBy
             });
             toast.success('Event created successfully!');
             setFormData({ ...formData, title: '', startDate: '', startTime: '', endDate: '', endTime: '', profileIds: [] });
@@ -173,22 +183,24 @@ export default function Dashboard() {
         setActiveEvent(event);
         setModalMode(mode);
         if (mode === 'edit') {
+            const refTZ = event.timezone || viewTimezone;
             setEditForm({
                 title: event.title,
-                startDate: dayjs(event.startTime).tz(viewTimezone).format('YYYY-MM-DD'),
-                startTime: dayjs(event.startTime).tz(viewTimezone).format('HH:mm'),
-                endDate: dayjs(event.endTime).tz(viewTimezone).format('YYYY-MM-DD'),
-                endTime: dayjs(event.endTime).tz(viewTimezone).format('HH:mm'),
+                startDate: dayjs(event.startTime).tz(refTZ).format('YYYY-MM-DD'),
+                startTime: dayjs(event.startTime).tz(refTZ).format('HH:mm'),
+                endDate: dayjs(event.endTime).tz(refTZ).format('YYYY-MM-DD'),
+                endTime: dayjs(event.endTime).tz(refTZ).format('HH:mm'),
                 profileIds: event.profiles?.map(p => p._id || p.id || p) || [],
+                referenceTimezone: refTZ,
                 updatedBy: ''
             });
         } else if (mode === 'logs') {
             try {
-                const res = await api.get(`/events/${event._id}/logs`, { 
-                    params: { timezone: viewTimezone } 
+                const res = await api.get(`/events/${event._id}/logs`, {
+                    params: { timezone: viewTimezone }
                 });
                 setEventLogs(res.data || []);
-            } catch (err) {}
+            } catch (err) { }
         }
     };
 
@@ -211,18 +223,18 @@ export default function Dashboard() {
                 startTime: startLocal,
                 endTime: endLocal,
                 profiles: editForm.profileIds,
-                timezone: viewTimezone,
+                timezone: editForm.referenceTimezone,
                 updatedBy: updatedByName
             });
             toast.success('Event updated!');
             setModalMode(null);
             if (selectedProfileId) dispatch(fetchEventsForProfile({ profileId: selectedProfileId, timezone: viewTimezone, page, limit }));
-        } catch (err) {}
+        } catch (err) { }
     };
 
     return (
         <div className="dashboard-container">
-            
+
             <header className="dashboard-header">
                 <div>
                     <h1 style={{ fontSize: '2rem', color: 'var(--text-primary)', marginBottom: '0.5rem', fontWeight: 700 }}>Event Management</h1>
@@ -230,7 +242,7 @@ export default function Dashboard() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '300px' }}>
-                    <SearchableSelect 
+                    <SearchableSelect
                         placeholder="Search & Select Profile..."
                         options={profiles.map(p => p.name)}
                         value={profiles.find(p => (p._id || p.id) === selectedProfileId)?.name || ''}
@@ -246,48 +258,48 @@ export default function Dashboard() {
             </header>
 
             <div className="dashboard-grid">
-                
+
                 {/* Left Column: Create Event */}
                 <div className="glass-panel" style={{ height: '780px', display: 'flex', flexDirection: 'column' }}>
                     <h3 style={{ fontSize: '1.4rem', marginBottom: '1.5rem', fontWeight: 600 }}>Create Event</h3>
-                    
+
                     <form onSubmit={handleCreateEvent}>
                         <Input
                             id="title" label="Event Title" required
-                            value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} placeholder="e.g. Weekly Sync"
+                            value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="e.g. Weekly Sync"
                         />
 
-                        <MultiSelect 
+                        <MultiSelect
                             label="Participants"
                             options={profiles}
                             selectedIds={formData.profileIds}
-                            onChange={(ids) => setFormData({...formData, profileIds: ids})}
+                            onChange={(ids) => setFormData({ ...formData, profileIds: ids })}
                             onAddProfile={() => setIsProfileModalOpen(true)}
                         />
 
-                        <SearchableSelect 
+                        <SearchableSelect
                             label="Reference Timezone"
                             options={STANDARD_TIMEZONES.map(t => t.label)}
                             value={STANDARD_TIMEZONES.find(t => t.zone === formData.creationTimezone)?.label || ''}
                             onChange={(label) => {
                                 const tz = STANDARD_TIMEZONES.find(t => t.label === label);
-                                if (tz) setFormData({...formData, creationTimezone: tz.zone});
+                                if (tz) setFormData({ ...formData, creationTimezone: tz.zone });
                             }}
                         />
 
                         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
                             <div style={{ flex: 1.5 }}>
                                 <label className="input-label" style={{ display: 'block', marginBottom: '8px' }}>Start Date</label>
-                                <input 
+                                <input
                                     className="input-field" type="date" min={today} required
-                                    value={formData.startDate} onChange={(e) => setFormData({...formData, startDate: e.target.value})} 
+                                    value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                                 />
                             </div>
                             <div style={{ flex: 1 }}>
                                 <label className="input-label" style={{ display: 'block', marginBottom: '8px' }}>Time</label>
-                                <input 
+                                <input
                                     className="input-field" type="time" required
-                                    value={formData.startTime} onChange={(e) => setFormData({...formData, startTime: e.target.value})} 
+                                    value={formData.startTime} onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                                 />
                             </div>
                         </div>
@@ -295,16 +307,16 @@ export default function Dashboard() {
                         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
                             <div style={{ flex: 1.5 }}>
                                 <label className="input-label" style={{ display: 'block', marginBottom: '8px' }}>End Date</label>
-                                <input 
+                                <input
                                     className="input-field" type="date" min={formData.startDate || today} required
-                                    value={formData.endDate} onChange={(e) => setFormData({...formData, endDate: e.target.value})} 
+                                    value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                                 />
                             </div>
                             <div style={{ flex: 1 }}>
                                 <label className="input-label" style={{ display: 'block', marginBottom: '8px' }}>Time</label>
-                                <input 
+                                <input
                                     className="input-field" type="time" required
-                                    value={formData.endTime} onChange={(e) => setFormData({...formData, endTime: e.target.value})} 
+                                    value={formData.endTime} onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                                 />
                             </div>
                         </div>
@@ -322,10 +334,10 @@ export default function Dashboard() {
                 {/* Right Column: Events List */}
                 <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', height: '780px' }}>
                     <h3 style={{ fontSize: '1.4rem', marginBottom: '1.5rem', fontWeight: 600 }}>Active Events</h3>
-                    
+
                     {/* Sticky Timezone Selector */}
                     <div className="sticky-timezone-header">
-                        <SearchableSelect 
+                        <SearchableSelect
                             label="View in Timezone"
                             options={STANDARD_TIMEZONES.map(t => t.label)}
                             value={STANDARD_TIMEZONES.find(t => t.zone === viewTimezone)?.label || ''}
@@ -335,7 +347,7 @@ export default function Dashboard() {
                             }}
                         />
                     </div>
-                    
+
                     <div style={{ flex: 1, overflowY: 'auto', marginTop: '1rem' }}>
                         {eventsLoading ? (
                             <p style={{ color: 'var(--text-secondary)' }}>Loading events...</p>
@@ -356,9 +368,9 @@ export default function Dashboard() {
                         ) : (
                             <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
                                 <p style={{ color: 'var(--text-secondary)' }}>
-                                    {profiles.length === 0 ? 'Create a profile to get started' : 
-                                     !selectedProfileId ? 'Select a profile to view events' : 
-                                     'No events found for this profile'}
+                                    {profiles.length === 0 ? 'Create a profile to get started' :
+                                        !selectedProfileId ? 'Select a profile to view events' :
+                                            'No events found for this profile'}
                                 </p>
                             </div>
                         )}
@@ -392,19 +404,19 @@ export default function Dashboard() {
             </Modal>
 
             {/* Action Modal (Edit / Logs / Participants) */}
-            <Modal 
-                isOpen={!!modalMode} 
-                onClose={() => setModalMode(null)} 
+            <Modal
+                isOpen={!!modalMode}
+                onClose={() => setModalMode(null)}
                 title={modalMode === 'edit' ? 'Edit Event' : modalMode === 'logs' ? 'Change History' : `Event Participants (${activeEvent?.profiles?.length || 0})`}
             >
                 {modalMode === 'participants' && activeEvent && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div style={{ position: 'relative', marginBottom: '0.5rem' }}>
                             <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
-                            <input 
-                                className="input-field" 
-                                style={{ paddingLeft: '38px' }} 
-                                placeholder="Search participants..." 
+                            <input
+                                className="input-field"
+                                style={{ paddingLeft: '38px' }}
+                                placeholder="Search participants..."
                                 value={logSearch}
                                 onChange={(e) => setLogSearch(e.target.value)}
                             />
@@ -438,7 +450,18 @@ export default function Dashboard() {
                                         <span style={{ opacity: 0.6 }}>{dayjs(log.timestamp).format('MMM D, h:mm A')}</span>
                                     </div>
                                     <ul style={{ paddingLeft: '1.2rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                                        {log.changes.map((c, i) => <li key={i}>Changed <strong>{c.field}</strong></li>)}
+                                        {log.changes.map((c, i) => (
+                                            <li key={i}>
+                                                Changed <strong>{c.field}</strong>: 
+                                                {c.field === 'profiles' ? (
+                                                    <span style={{ color: 'var(--primary-color)', marginLeft: '4px', fontWeight: 600 }}>
+                                                        {c.newValue}
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ opacity: 0.7 }}> to {c.newValue}</span>
+                                                )}
+                                            </li>
+                                        ))}
                                     </ul>
                                 </div>
                             ))
@@ -448,35 +471,53 @@ export default function Dashboard() {
 
                 {modalMode === 'edit' && (
                     <form onSubmit={handleUpdateEvent}>
-                        <Input label="Title" value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})} />
-                        <MultiSelect label="Participants" options={profiles} selectedIds={editForm.profileIds} onChange={ids => setEditForm({...editForm, profileIds: ids})} onAddProfile={() => setIsProfileModalOpen(true)} />
+                        <Input label="Title" value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} />
+                        <MultiSelect label="Participants" options={profiles} selectedIds={editForm.profileIds} onChange={ids => setEditForm({ ...editForm, profileIds: ids })} onAddProfile={() => setIsProfileModalOpen(true)} />
                         
+                        <SearchableSelect 
+                            label="Reference Timezone"
+                            options={STANDARD_TIMEZONES.map(t => t.label)}
+                            value={STANDARD_TIMEZONES.find(t => t.zone === editForm.referenceTimezone)?.label || ''}
+                            onChange={(label) => {
+                                const tz = STANDARD_TIMEZONES.find(t => t.label === label);
+                                if (tz) {
+                                    setEditForm(prev => ({
+                                        ...prev, 
+                                        referenceTimezone: tz.zone,
+                                        // Update times to match the same instant in the new reference timezone?
+                                        // Actually, usually when user changes reference timezone, they want to re-type the times.
+                                        // But it's safer to just set the timezone string.
+                                    }));
+                                }
+                            }}
+                        />
+
                         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
                             <div style={{ flex: 1.5 }}>
                                 <label className="input-label" style={{ display: 'block', marginBottom: '8px' }}>Start Date</label>
-                                <input className="input-field" type="date" min={today} required value={editForm.startDate} onChange={e => setEditForm({...editForm, startDate: e.target.value})} />
+                                <input className="input-field" type="date" min={today} required value={editForm.startDate} onChange={e => setEditForm({ ...editForm, startDate: e.target.value })} />
                             </div>
                             <div style={{ flex: 1 }}>
                                 <label className="input-label" style={{ display: 'block', marginBottom: '8px' }}>Time</label>
-                                <input className="input-field" type="time" required value={editForm.startTime} onChange={e => setEditForm({...editForm, startTime: e.target.value})} />
+                                <input className="input-field" type="time" required value={editForm.startTime} onChange={e => setEditForm({ ...editForm, startTime: e.target.value })} />
                             </div>
                         </div>
 
                         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
                             <div style={{ flex: 1.5 }}>
                                 <label className="input-label" style={{ display: 'block', marginBottom: '8px' }}>End Date</label>
-                                <input className="input-field" type="date" min={editForm.startDate || today} required value={editForm.endDate} onChange={e => setEditForm({...editForm, endDate: e.target.value})} />
+                                <input className="input-field" type="date" min={editForm.startDate || today} required value={editForm.endDate} onChange={e => setEditForm({ ...editForm, endDate: e.target.value })} />
                             </div>
                             <div style={{ flex: 1 }}>
                                 <label className="input-label" style={{ display: 'block', marginBottom: '8px' }}>Time</label>
-                                <input className="input-field" type="time" required value={editForm.endTime} onChange={e => setEditForm({...editForm, endTime: e.target.value})} />
+                                <input className="input-field" type="time" required value={editForm.endTime} onChange={e => setEditForm({ ...editForm, endTime: e.target.value })} />
                             </div>
                         </div>
 
                         <div style={{ marginBottom: '1.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                             Updating as: <strong style={{ color: 'var(--primary-color)' }}>{formData.createdBy || 'Active Profile'}</strong>
                         </div>
-                        
+
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
                             <Button type="button" variant="secondary" onClick={() => setModalMode(null)}>Cancel</Button>
                             <Button type="submit" variant="primary" disabled={!hasEditChanges}>Save Changes</Button>
