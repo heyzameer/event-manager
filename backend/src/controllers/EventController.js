@@ -4,7 +4,13 @@ const { asyncHandler } = require('../utils/errorHandler');
 
 class EventController {
     createEvent = asyncHandler(async (req, res) => {
-        const event = await eventService.createEvent(req.body);
+        const { startTime, endTime, ...rest } = req.body;
+        const data = {
+            ...rest,
+            startTime: typeof startTime === 'string' ? startTime : new Date(startTime).toISOString(),
+            endTime: typeof endTime === 'string' ? endTime : new Date(endTime).toISOString()
+        };
+        const event = await eventService.createEvent(data);
         sendSuccess(res, 'Event created successfully', event, 201);
     });
 
@@ -24,9 +30,15 @@ class EventController {
 
     updateEvent = asyncHandler(async (req, res) => {
         const { id } = req.params;
-        const { updatedBy, timezone, ...updateData } = req.body;
-
-        const event = await eventService.updateEvent(id, req.body, updatedBy, timezone);
+        const { startTime, endTime, ...rest } = req.body;
+        // Same protection for update: keep startTime/endTime as plain strings
+        const body = {
+            ...rest,
+            startTime: startTime ? (typeof startTime === 'string' ? startTime : new Date(startTime).toISOString()) : undefined,
+            endTime: endTime ? (typeof endTime === 'string' ? endTime : new Date(endTime).toISOString()) : undefined
+        };
+        const { updatedBy, timezone } = body;
+        const event = await eventService.updateEvent(id, body, updatedBy, timezone);
         sendSuccess(res, 'Event updated successfully', event);
     });
 }
