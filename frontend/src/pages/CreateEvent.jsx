@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
@@ -8,7 +8,6 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import { fetchEventsForProfile } from '../store/eventsSlice';
 import dayjs from 'dayjs';
-import { STANDARD_TIMEZONES } from '../config/timezones';
 
 export default function CreateEvent() {
     const navigate = useNavigate();
@@ -19,27 +18,12 @@ export default function CreateEvent() {
 
     const [formData, setFormData] = useState({
         title: '',
-        startDate: '',
-        startTime: '',
-        endDate: '',
-        endTime: '',
+        startDate: dayjs().tz(viewTimezone).format('YYYY-MM-DD'),
+        startTime: dayjs().tz(viewTimezone).format('HH:mm'),
+        endDate: dayjs().tz(viewTimezone).add(1, 'hour').format('YYYY-MM-DD'),
+        endTime: dayjs().tz(viewTimezone).add(1, 'hour').format('HH:mm'),
         createdBy: ''
     });
-
-    // Sync form date/time with selected timezone if they are empty
-    useEffect(() => {
-        if (!formData.startDate || !formData.startTime) {
-            const nowInTZ = dayjs().tz(viewTimezone);
-            setFormData(prev => ({
-                ...prev,
-                startDate: prev.startDate || nowInTZ.format('YYYY-MM-DD'),
-                startTime: prev.startTime || nowInTZ.format('HH:mm'),
-                // Default end time to 1 hour later
-                endDate: prev.endDate || nowInTZ.add(1, 'hour').format('YYYY-MM-DD'),
-                endTime: prev.endTime || nowInTZ.add(1, 'hour').format('HH:mm')
-            }));
-        }
-    }, [viewTimezone]);
 
     const today = dayjs().tz(viewTimezone).format('YYYY-MM-DD');
 
@@ -77,7 +61,9 @@ export default function CreateEvent() {
 
             // Go back to the dashboard
             navigate('/');
-        } catch (err) { }
+        } catch {
+            // Error is handled by toast
+        }
     };
 
     return (

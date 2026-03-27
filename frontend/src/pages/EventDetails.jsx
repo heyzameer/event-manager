@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import Navbar from '../components/Navbar';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import SearchableSelect from '../components/SearchableSelect';
@@ -36,36 +35,35 @@ export default function EventDetails() {
     });
 
     const timezones = Intl.supportedValuesOf('timeZone');
-    // Calculate "today" based on the selected creation timezone to allow correct date picking
     const today = dayjs().tz(viewTimezone).format('YYYY-MM-DD');
 
-    // Load the single event and its logs
-    const fetchEventAndLogs = async () => {
-        try {
-            const [resEvent, resLogs] = await Promise.all([
-                api.get(`/events/${id}?timezone=${viewTimezone}`),
-                api.get(`/events/${id}/logs?timezone=${viewTimezone}`)
-            ]);
-            setEventData(resEvent.data);
-            setLogs(resLogs.data || []);
-            
-            setEditForm({
-                title: resEvent.data.title,
-                startDate: dayjs(resEvent.data.startTime).tz(viewTimezone).format('YYYY-MM-DD'),
-                startTime: dayjs(resEvent.data.startTime).tz(viewTimezone).format('HH:mm'),
-                endDate: dayjs(resEvent.data.endTime).tz(viewTimezone).format('YYYY-MM-DD'),
-                endTime: dayjs(resEvent.data.endTime).tz(viewTimezone).format('HH:mm'),
-                profileIds: resEvent.data.profiles || [],
-                updatedBy: ''
-            });
-        } catch (err) {
-            if (err.status === 404) navigate('/');
-        }
-    };
-
     useEffect(() => {
+        // Load the single event and its logs
+        const fetchEventAndLogs = async () => {
+            try {
+                const [resEvent, resLogs] = await Promise.all([
+                    api.get(`/events/${id}?timezone=${viewTimezone}`),
+                    api.get(`/events/${id}/logs?timezone=${viewTimezone}`)
+                ]);
+                setEventData(resEvent.data);
+                setLogs(resLogs.data || []);
+
+                setEditForm({
+                    title: resEvent.data.title,
+                    startDate: dayjs(resEvent.data.startTime).tz(viewTimezone).format('YYYY-MM-DD'),
+                    startTime: dayjs(resEvent.data.startTime).tz(viewTimezone).format('HH:mm'),
+                    endDate: dayjs(resEvent.data.endTime).tz(viewTimezone).format('YYYY-MM-DD'),
+                    endTime: dayjs(resEvent.data.endTime).tz(viewTimezone).format('HH:mm'),
+                    profileIds: resEvent.data.profiles || [],
+                    updatedBy: ''
+                });
+            } catch (err) {
+                if (err.status === 404) navigate('/');
+            }
+        };
+
         fetchEventAndLogs();
-    }, [id, viewTimezone]);
+    }, [id, viewTimezone, navigate]);
 
     const handleUpdate = async (e) => {
         e.preventDefault();
@@ -94,10 +92,20 @@ export default function EventDetails() {
             
             toast.success('Event updated!');
             setIsEditing(false);
-            fetchEventAndLogs();
+            
+            // Re-fetch local data
+            const [resEvent, resLogs] = await Promise.all([
+                api.get(`/events/${id}?timezone=${viewTimezone}`),
+                api.get(`/events/${id}/logs?timezone=${viewTimezone}`)
+            ]);
+            setEventData(resEvent.data);
+            setLogs(resLogs.data || []);
+
             if (selectedProfileId) dispatch(fetchEventsForProfile({ profileId: selectedProfileId, timezone: viewTimezone }));
             
-        } catch (err) {}
+        } catch {
+            // Error is handled by toast
+        }
     };
 
     if (!eventData) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;

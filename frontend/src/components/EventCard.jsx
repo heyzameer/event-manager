@@ -1,4 +1,3 @@
-import React from 'react';
 import { Calendar, Users, Edit3, ClipboardList, Clock } from 'lucide-react';
 import dayjs from 'dayjs';
 

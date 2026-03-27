@@ -1,4 +1,3 @@
-import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { setViewTimezone } from '../store/eventsSlice';
 import { Calendar, Globe } from 'lucide-react';
@@ -37,7 +36,6 @@ export default function Navbar() {
                     value={viewTimezone}
                     onChange={(e) => dispatch(setViewTimezone(e.target.value))}
                 >
-                    {/* This will render the complete global list */}
                     {timezones.map(tz => (
                         <option key={tz} value={tz}>{tz}</option>
                     ))}

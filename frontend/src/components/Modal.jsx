@@ -1,6 +1,3 @@
-import React from 'react';
-import { X } from 'lucide-react';
-
 export default function Modal({ isOpen, onClose, title, children }) {
     if (!isOpen) return null;
 
@@ -36,8 +33,8 @@ export default function Modal({ isOpen, onClose, title, children }) {
                 </div>
 
                 {/* Content */}
-                <div style={{ 
-                    maxHeight: '70vh', 
+                <div style={{
+                    maxHeight: '70vh',
                     overflowY: 'auto',
                     paddingRight: '4px' // Little space for scrollbar
                 }}>

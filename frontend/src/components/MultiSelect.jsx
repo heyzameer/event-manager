@@ -1,12 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check, UserPlus, X } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { ChevronDown, Check, UserPlus } from 'lucide-react';
 
 export default function MultiSelect({ 
     options, 
     selectedIds, 
     onChange, 
     onAddProfile,
-    placeholder = "Select profiles...", 
+    placeholder = 'Select profiles...', 
     label 
 }) {
     const [isOpen, setIsOpen] = useState(false);

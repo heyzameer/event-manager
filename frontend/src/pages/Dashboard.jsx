@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, memo, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchProfiles, setSelectedProfile } from '../store/profilesSlice';
 import { fetchEventsForProfile, setViewTimezone } from '../store/eventsSlice';
@@ -12,10 +12,10 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
 import { STANDARD_TIMEZONES } from '../config/timezones';
-import { Search, Info, History, Edit3 } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 // Memoized EventCard to avoid unnecessary re-renders
-const MemoizedEventCard = React.memo(EventCard);
+const MemoizedEventCard = memo(EventCard);
 
 export default function Dashboard() {
     const dispatch = useDispatch();
@@ -31,7 +31,7 @@ export default function Dashboard() {
 
     // Action Modals State
     const [activeEvent, setActiveEvent] = useState(null);
-    const [modalMode, setModalMode] = useState(null); // 'edit', 'logs', 'participants'
+    const [modalMode, setModalMode] = useState(null); // edit, logs, participants
     const [editForm, setEditForm] = useState({ 
         title: '', 
         startDate: '', 
@@ -47,7 +47,7 @@ export default function Dashboard() {
     const [debouncedSearch, setDebouncedSearch] = useState('');
 
     // Check if Edit Form has actual changes
-    const hasEditChanges = React.useMemo(() => {
+    const hasEditChanges = useMemo(() => {
         if (!activeEvent || modalMode !== 'edit') return false;
 
         const currentProfiles = activeEvent.profiles?.map(p => p._id || p.id || p) || [];
@@ -59,8 +59,8 @@ export default function Dashboard() {
         return editForm.title !== activeEvent.title ||
             profilesChanged ||
             editForm.referenceTimezone !== activeEvent.timezone ||
-            new Date(startISO).getTime() !== new Date(activeEvent.startTime).getTime() ||
-            new Date(endISO).getTime() !== new Date(activeEvent.endTime).getTime();
+            Math.floor(new Date(startISO).getTime() / 1000) !== Math.floor(new Date(activeEvent.startTime).getTime() / 1000) ||
+            Math.floor(new Date(endISO).getTime() / 1000) !== Math.floor(new Date(activeEvent.endTime).getTime() / 1000);
     }, [editForm, activeEvent, modalMode]);
 
     // Debounce Logic
@@ -70,7 +70,7 @@ export default function Dashboard() {
     }, [logSearch]);
 
     // Memoized Participant Filtering (O(n))
-    const filteredParticipants = React.useMemo(() => {
+    const filteredParticipants = useMemo(() => {
         if (!activeEvent || modalMode !== 'participants') return [];
         return activeEvent.profiles
             .map(pOrId => {
@@ -88,26 +88,10 @@ export default function Dashboard() {
         endDate: '',
         endTime: '',
         profileIds: [],
-        creationTimezone: STANDARD_TIMEZONES.find(t => t.zone === Intl.DateTimeFormat().resolvedOptions().timeZone)?.zone || "Etc/GMT",
+        creationTimezone: STANDARD_TIMEZONES.find(t => t.zone === Intl.DateTimeFormat().resolvedOptions().timeZone)?.zone || 'Etc/GMT',
         createdBy: ''
     });
 
-    // Sync form date/time with selected timezone if they are empty
-    useEffect(() => {
-        if (!formData.startDate || !formData.startTime) {
-            const nowInTZ = dayjs().tz(formData.creationTimezone);
-            setFormData(prev => ({
-                ...prev,
-                startDate: prev.startDate || nowInTZ.format('YYYY-MM-DD'),
-                startTime: prev.startTime || nowInTZ.format('HH:mm'),
-                // Default end time to 1 hour later
-                endDate: prev.endDate || nowInTZ.add(1, 'hour').format('YYYY-MM-DD'),
-                endTime: prev.endTime || nowInTZ.add(1, 'hour').format('HH:mm')
-            }));
-        }
-    }, [formData.creationTimezone]);
-
-    // Calculate "today" based on the selected creation timezone to allow correct date picking
     const today = dayjs().tz(formData.creationTimezone).format('YYYY-MM-DD');
 
     useEffect(() => {
@@ -120,17 +104,8 @@ export default function Dashboard() {
         }
     }, [selectedProfileId, viewTimezone, page, dispatch]);
 
-    // Reset page when profile or timezone changes
-    useEffect(() => {
-        setPage(1);
-    }, [selectedProfileId, viewTimezone]);
-
-    useEffect(() => {
-        const currentProfile = profiles.find(p => (p._id || p.id) === selectedProfileId);
-        if (currentProfile) {
-            setFormData(prev => ({ ...prev, createdBy: currentProfile.name }));
-        }
-    }, [selectedProfileId, profiles]);
+    // Derived createdBy to avoid effect-based state sync
+    const effectiveCreatedBy = formData.createdBy || profiles.find(p => (p._id || p.id) === selectedProfileId)?.name || '';
 
     const handleCreateProfile = async (e) => {
         if (e) e.preventDefault();
@@ -142,7 +117,9 @@ export default function Dashboard() {
             setNewProfileName('');
             setIsProfileModalOpen(false);
             toast.success('Profile created!');
-        } catch (err) { }
+        } catch {
+            // Handled or ignored
+        }
     };
 
     const handleCreateEvent = async (e) => {
@@ -176,7 +153,9 @@ export default function Dashboard() {
             toast.success('Event created successfully!');
             setFormData({ ...formData, title: '', startDate: '', startTime: '', endDate: '', endTime: '', profileIds: [] });
             if (selectedProfileId) dispatch(fetchEventsForProfile({ profileId: selectedProfileId, timezone: viewTimezone, page: 1, limit }));
-        } catch (err) { }
+        } catch {
+            // Handled or ignored
+        }
     };
 
     const openActionModal = async (event, mode) => {
@@ -200,7 +179,9 @@ export default function Dashboard() {
                     params: { timezone: viewTimezone }
                 });
                 setEventLogs(res.data || []);
-            } catch (err) { }
+            } catch {
+            // Handled or ignored
+            }
         }
     };
 
@@ -229,7 +210,9 @@ export default function Dashboard() {
             toast.success('Event updated!');
             setModalMode(null);
             if (selectedProfileId) dispatch(fetchEventsForProfile({ profileId: selectedProfileId, timezone: viewTimezone, page, limit }));
-        } catch (err) { }
+        } catch {
+            // Handled or ignored
+        }
     };
 
     return (
@@ -248,7 +231,10 @@ export default function Dashboard() {
                         value={profiles.find(p => (p._id || p.id) === selectedProfileId)?.name || ''}
                         onChange={(name) => {
                             const p = profiles.find(x => x.name === name);
-                            if (p) dispatch(setSelectedProfile(p._id || p.id));
+                            if (p) {
+                                dispatch(setSelectedProfile(p._id || p.id));
+                                setPage(1);
+                            }
                         }}
                     />
                     <Button variant="primary" style={{ width: '100%', padding: '0.6rem' }} onClick={() => setIsProfileModalOpen(true)}>
@@ -322,10 +308,15 @@ export default function Dashboard() {
                         </div>
 
                         <div style={{ marginBottom: '1.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                            Creating as: <strong style={{ color: 'var(--primary-color)' }}>{formData.createdBy || 'No profile selected'}</strong>
+                            Creating as: <strong style={{ color: 'var(--primary-color)' }}>{effectiveCreatedBy || 'No profile selected'}</strong>
                         </div>
 
-                        <Button type="submit" variant="primary" style={{ width: '100%', marginTop: 'auto', padding: '1rem', fontSize: '1rem' }}>
+                        <Button 
+                            type="submit" 
+                            variant="primary" 
+                            style={{ width: '100%', marginTop: 'auto', padding: '1rem', fontSize: '1rem' }}
+                            disabled={!formData.title || formData.profileIds.length === 0}
+                        >
                             + Create Event
                         </Button>
                     </form>
@@ -343,7 +334,10 @@ export default function Dashboard() {
                             value={STANDARD_TIMEZONES.find(t => t.zone === viewTimezone)?.label || ''}
                             onChange={(label) => {
                                 const tz = STANDARD_TIMEZONES.find(t => t.label === label);
-                                if (tz) dispatch(setViewTimezone(tz.zone));
+                                if (tz) {
+                                    dispatch(setViewTimezone(tz.zone));
+                                    setPage(1);
+                                }
                             }}
                         />
                     </div>
@@ -484,9 +478,6 @@ export default function Dashboard() {
                                     setEditForm(prev => ({
                                         ...prev, 
                                         referenceTimezone: tz.zone,
-                                        // Update times to match the same instant in the new reference timezone?
-                                        // Actually, usually when user changes reference timezone, they want to re-type the times.
-                                        // But it's safer to just set the timezone string.
                                     }));
                                 }
                             }}

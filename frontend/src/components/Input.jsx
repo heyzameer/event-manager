@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function Input({ label, id, className = '', ...props }) {
     return (
         <div className={`input-group ${className}`}>

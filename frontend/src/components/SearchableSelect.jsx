@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Search, ChevronDown, Check } from 'lucide-react';
 
 export default function SearchableSelect({ 
     options, 
     value, 
     onChange, 
-    placeholder = "Select...", 
+    placeholder = 'Select...', 
     label 
 }) {
     const [isOpen, setIsOpen] = useState(false);
