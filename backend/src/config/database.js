@@ -1,7 +1,12 @@
-const mongoose = require('mongoose');
-const config = require('./index');
-const { logger } = require('../utils/logger');
+import mongoose from 'mongoose';
+import config from './index.js';
+import { logger } from '../utils/logger.js';
 
+/**
+ * Database connection class
+ * @class
+ * @description MongoDB connection and disconnection
+ */
 class DatabaseConnection {
     constructor() {
         this.isConnected = false;
@@ -52,4 +57,4 @@ class DatabaseConnection {
     }
 }
 
-module.exports = DatabaseConnection;
+export default DatabaseConnection;

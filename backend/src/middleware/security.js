@@ -1,9 +1,14 @@
-const helmet = require('helmet');
-const compression = require('compression');
+import helmet from 'helmet';
+import compression from 'compression';
 
+/**
+ * Security middleware
+ * @module middleware
+ * @description Security middleware for security header
+ */
 const securityMiddleware = [
     helmet(),
     compression()
 ];
 
-module.exports = securityMiddleware;
+export default securityMiddleware;

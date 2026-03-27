@@ -1,17 +1,23 @@
-const profileService = require('../services/ProfileService');
-const { sendSuccess } = require('../utils/response');
-const { asyncHandler } = require('../utils/errorHandler');
+import profileService from '../services/ProfileService.js';
+import { sendSuccess } from '../utils/response.js';
+import { asyncHandler } from '../utils/errorHandler.js';
+import { STATUS_CODES, MESSAGES } from '../utils/constants.js';
 
+/**
+ * Profile controller
+ * @class
+ * @description Profile controller for handling profile req
+ */
 class ProfileController {
     createProfile = asyncHandler(async (req, res) => {
         const profile = await profileService.createProfile(req.body);
-        sendSuccess(res, 'Profile created successfully', profile, 201);
+        sendSuccess(res, MESSAGES.PROFILE.CREATED, profile, STATUS_CODES.CREATED);
     });
 
     getProfiles = asyncHandler(async (req, res) => {
         const profiles = await profileService.getAllProfiles();
-        sendSuccess(res, 'Profiles retrieved successfuly', profiles);
+        sendSuccess(res, MESSAGES.PROFILE.FETCHED, profiles, STATUS_CODES.SUCCESS);
     });
 }
 
-module.exports = new ProfileController();
+export default new ProfileController();

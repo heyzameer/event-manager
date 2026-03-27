@@ -1,10 +1,13 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const profileController = require('../controllers/ProfileController');
-const { validate } = require('../middleware/validation');
-const { createProfileSchema } = require('../validators/profileValidator');
+import profileController from '../controllers/ProfileController.js';
+import { validate } from '../middleware/validation.js';
+import { createProfileSchema } from '../validators/profileValidator.js';
 
+// Create profile
 router.post('/', validate(createProfileSchema), profileController.createProfile);
+
+// Get all profiles
 router.get('/', profileController.getProfiles);
 
-module.exports = router;
+export default router;

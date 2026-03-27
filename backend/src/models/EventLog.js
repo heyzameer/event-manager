@@ -1,5 +1,10 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
+/**
+ * Event log schema
+ * @module models
+ * @description Event log schema for storing event log data
+ */
 const eventLogSchema = new mongoose.Schema({
     eventId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -24,4 +29,4 @@ const eventLogSchema = new mongoose.Schema({
 eventLogSchema.index({ eventId: 1 });
 
 const EventLog = mongoose.model('EventLog', eventLogSchema);
-module.exports = EventLog;
+export default EventLog;

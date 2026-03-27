@@ -1,11 +1,23 @@
-const BaseRepository = require('./BaseRepository');
-const Event = require('../models/Event');
+import BaseRepository from './BaseRepository.js';
+import Event from '../models/Event.js';
 
+/**
+ * Event repository
+ * @module repositories
+ * @description Event repository for handling event data
+ */
 class EventRepository extends BaseRepository {
     constructor() {
         super(Event);
     }
 
+    /**
+     * Find events by profile ID
+     * @param {string} profileId - Profile ID
+     * @param {number} skip - Skip count
+     * @param {number} limit - Limit count
+     * @returns {Promise<Object>} Found events
+     */
     async findByProfileId(profileId, skip = 0, limit = 10) {
         const query = { profiles: profileId };
 
@@ -40,4 +52,4 @@ class EventRepository extends BaseRepository {
     }
 }
 
-module.exports = new EventRepository();
+export default new EventRepository();

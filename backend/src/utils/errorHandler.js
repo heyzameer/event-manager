@@ -1,7 +1,13 @@
-const { logger } = require('./logger');
-const config = require('../config');
+import { logger } from './logger.js';
+import config from '../config/index.js';
+import { STATUS_CODES, MESSAGES } from './constants.js';
 
-class AppError extends Error {
+/**
+ * Error handling utilities
+ * @module utils
+ * @description Error handling utilities for the applicatinon
+ */
+export class AppError extends Error {
     constructor(message, statusCode) {
         super(message);
         this.statusCode = statusCode;
@@ -10,14 +16,14 @@ class AppError extends Error {
     }
 }
 
-const createError = (message, statusCode = 500) => new AppError(message, statusCode);
+export const createError = (message, statusCode = STATUS_CODES.INTERNAL_SERVER_ERROR) => new AppError(message, statusCode);
 
-const asyncHandler = (fn) => (req, res, next) => {
+export const asyncHandler = (fn) => (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
 };
 
-const handleError = (error, req, res, next) => {
-    const statusCode = error.statusCode || 500;
+export const handleError = (error, req, res, _next) => {
+    const statusCode = error.statusCode || STATUS_CODES.INTERNAL_SERVER_ERROR;
     let { message } = error;
 
     logger.error(`Error ${statusCode}: ${message}`, {
@@ -27,7 +33,7 @@ const handleError = (error, req, res, next) => {
     });
 
     if (config.env === 'production' && !error.isOperational) {
-        message = 'Something went wrong!';
+        message = MESSAGES.SYSTEM.ERROR;
     }
 
     res.status(statusCode).json({
@@ -37,5 +43,3 @@ const handleError = (error, req, res, next) => {
         ...(config.env === 'development' && { stack: error.stack }),
     });
 };
-
-module.exports = { AppError, createError, asyncHandler, handleError };

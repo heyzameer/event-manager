@@ -1,18 +1,29 @@
-const Joi = require("joi");
+import Joi from 'joi';
 
+/**
+ * Environment configuration
+ * @module config
+ * @description Environment variables validation and configuration
+ */
 const envSchema = Joi.object({
     NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
-    PORT: Joi.number().default(5000),
-    MONGODB_URI: Joi.string().required(),
-    CORS_ORIGIN: Joi.string().default('http://localhost:5173'),
-    RATE_LIMIT_WINDOW_MS: Joi.number().default(900000),
-    RATE_LIMIT_MAX: Joi.number().default(100),
+    PORT: Joi.number().port().default(5000),
+    MONGODB_URI: Joi.string().uri().required().description('MongoDB connection string'),
+    CORS_ORIGIN: Joi.string().default('http://localhost:5173').description('Comma separated list of allowed origins'),
+    RATE_LIMIT_WINDOW_MS: Joi.number().integer().min(1).default(900000),
+    RATE_LIMIT_MAX: Joi.number().integer().min(1).default(100),
+    LOG_MAX_SIZE: Joi.string().default('20m'),
+    LOG_MAX_FILES: Joi.string().default('14d'),
 }).unknown();
 
-const { error, value: env } = envSchema.validate(process.env);
+const { error, value: env } = envSchema.validate(process.env, { abortEarly: false });
 
 if (error) {
-    throw new Error(`Config validation error: ${error.message}`);
+    console.error('Invalid environment variables:');
+    error.details.forEach((detail) => {
+        console.error(`   - ${detail.message}`);
+    });
+    throw new Error('Environment validation failed');
 }
 
 const config = {
@@ -28,5 +39,9 @@ const config = {
         windowMs: env.RATE_LIMIT_WINDOW_MS,
         max: env.RATE_LIMIT_MAX,
     },
+    logging: {
+        maxSize: env.LOG_MAX_SIZE,
+        maxFiles: env.LOG_MAX_FILES,
+    },
 };
-module.exports = config;
+export default config;

@@ -1,9 +1,8 @@
-require('dotenv').config();
-
-const appInstance = require('./app');
-const DatabaseConnection = require('./config/database');
-const config = require('./config');
-const { logger } = require('./utils/logger');
+import 'dotenv/config';
+import appInstance from './app.js';
+import DatabaseConnection from './config/database.js';
+import config from './config/index.js';
+import { logger } from './utils/logger.js';
 
 process.on('uncaughtException', (error) => {
     logger.error('Uncaught Exception! Shutting down...', error);
@@ -12,7 +11,7 @@ process.on('uncaughtException', (error) => {
 
 async function startServer() {
     try {
-        // 1. Connect to Database (using your custom connectDB or the Singleton)
+        //Connect to Database (using your custom connectDB or the Singleton)
         const db = DatabaseConnection.getInstance ? DatabaseConnection.getInstance() : DatabaseConnection;
         await db.connect();
 

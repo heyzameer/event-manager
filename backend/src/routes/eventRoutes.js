@@ -1,18 +1,23 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const eventController = require('../controllers/EventController');
-const eventLogController = require('../controllers/EventLogController');
-const { validate } = require('../middleware/validation');
-const { createEventSchema, updateEventSchema } = require('../validators/eventValidator');
+import eventController from '../controllers/EventController.js';
+import eventLogController from '../controllers/EventLogController.js';
+import { validate } from '../middleware/validation.js';
+import { createEventSchema, updateEventSchema } from '../validators/eventValidator.js';
 
+// Create event
 router.post('/', validate(createEventSchema), eventController.createEvent);
 
+// Get all events
 router.get('/', eventController.getEvents);
 
+// Get event by ID
 router.get('/:id', eventController.getEventById);
 
+// Update event
 router.put('/:id', validate(updateEventSchema), eventController.updateEvent);
 
+// Get event logs
 router.get('/:id/logs', eventLogController.getEventLogs);
 
-module.exports = router;
+export default router;

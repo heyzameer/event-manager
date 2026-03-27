@@ -1,5 +1,10 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
+/**
+ * Profile schema
+ * @module models
+ * @description Profile schema for storing profile data
+ */
 const profileSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -17,4 +22,4 @@ const profileSchema = new mongoose.Schema({
 });
 
 const Profile = mongoose.model('Profile', profileSchema);
-module.exports = Profile;
+export default Profile;

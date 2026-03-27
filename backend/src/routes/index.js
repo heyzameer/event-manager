@@ -1,18 +1,23 @@
-const express = require('express');
+import express from 'express';
+import { MESSAGES } from '../utils/constants.js';
 const router = express.Router();
 
-const profileRoutes = require('./profileRoutes');
-const eventRoutes = require('./eventRoutes');
+import profileRoutes from './profileRoutes.js';
+import eventRoutes from './eventRoutes.js';
 
+// Health check
 router.get('/health', (req, res) => {
     res.json({
         success: true,
-        message: 'Event Management System API is running',
+        message: MESSAGES.SYSTEM.HEALTH,
         timestamp: new Date().toISOString()
     });
 });
 
+// Profile routes
 router.use('/profiles', profileRoutes);
+
+// Event routes
 router.use('/events', eventRoutes);
 
-module.exports = router;
+export default router;

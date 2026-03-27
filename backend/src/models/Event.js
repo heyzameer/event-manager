@@ -1,5 +1,10 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
+/**
+ * Event schema
+ * @module models
+ * @description Event schema for storing event data
+ */
 const eventSchema = new mongoose.Schema({
     title: {
         type: String,
@@ -38,4 +43,4 @@ const eventSchema = new mongoose.Schema({
 eventSchema.index({ profiles: 1 });
 
 const Event = mongoose.model('Event', eventSchema);
-module.exports = Event;
+export default Event;

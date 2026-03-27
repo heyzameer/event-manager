@@ -1,5 +1,6 @@
-const winston = require('winston');
-const config = require('../config');
+import winston from 'winston';
+import DailyRotateFile from 'winston-daily-rotate-file';
+import config from '../config/index.js';
 
 const logFormat = winston.format.combine(
     winston.format.timestamp(),
@@ -7,7 +8,7 @@ const logFormat = winston.format.combine(
     winston.format.json()
 );
 
-const logger = winston.createLogger({
+export const logger = winston.createLogger({
     level: config.env === 'production' ? 'info' : 'debug',
     format: logFormat,
     transports: [
@@ -20,9 +21,20 @@ const logger = winston.createLogger({
                 })
             ),
         }),
-        new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-        new winston.transports.File({ filename: 'logs/combined.log' }),
+        new DailyRotateFile({
+            filename: 'logs/error-%DATE%.log',
+            level: 'error',
+            datePattern: 'YYYY-MM-DD',
+            zippedArchive: true,
+            maxSize: config.logging.maxSize,
+            maxFiles: config.logging.maxFiles
+        }),
+        new DailyRotateFile({
+            filename: 'logs/combined-%DATE%.log',
+            datePattern: 'YYYY-MM-DD',
+            zippedArchive: true,
+            maxSize: config.logging.maxSize,
+            maxFiles: config.logging.maxFiles
+        }),
     ],
 });
-
-module.exports = { logger };

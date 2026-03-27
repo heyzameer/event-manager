@@ -1,10 +1,21 @@
-const BaseRepository = require('./BaseRepository');
-const Profile = require('../models/Profile');
+import BaseRepository from './BaseRepository.js';
+import Profile from '../models/Profile.js';
 
+/**
+ * Profile repository
+ * @module repositories
+ * @description Profile repository for handling profile data
+ */
 class ProfileRepository extends BaseRepository {
     constructor() {
         super(Profile);
     }
+
+    /**
+     * Find profile by name
+     * @param {string} name - Profile name
+     * @returns {Promise<Object>} Found profile
+     */
 
     async findByName(name) {
         return await this.model.findOne({
@@ -13,4 +24,4 @@ class ProfileRepository extends BaseRepository {
     }
 }
 
-module.exports = new ProfileRepository();
+export default new ProfileRepository();

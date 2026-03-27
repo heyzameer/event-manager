@@ -1,16 +1,23 @@
-const express = require('express');
+import express from 'express';
 
-//Middlewares
-const corsMiddleware = require('./middleware/cors');
-const securityMiddleware = require('./middleware/security');
-const { generalLimiter } = require('./middleware/rateLimit');
-const httpLogger = require('./middleware/logging');
+//Middleware
+import corsMiddleware from './middleware/cors.js';
+import securityMiddleware from './middleware/security.js';
+import { generalLimiter } from './middleware/rateLimit.js';
+import httpLogger from './middleware/logging.js';
+import requestId from './middleware/requestId.js';
 
 //App Routes & Error Handling
-const routes = require('./routes');
-const { handleError } = require('./utils/errorHandler');
-const { logger } = require('./utils/logger');
+import routes from './routes/index.js';
+import { handleError } from './utils/errorHandler.js';
+import { logger } from './utils/logger.js';
+import { STATUS_CODES, MESSAGES } from './utils/constants.js';
 
+/**
+ * Application class
+ * @module app
+ * @description Application class for initializing the app
+ */
 class Application {
     constructor() {
         this.app = express();
@@ -21,6 +28,9 @@ class Application {
     }
 
     initializeMiddlewares() {
+        // Request ID tracking
+        this.app.use(requestId);
+
         // Security
         this.app.use(securityMiddleware);
         this.app.use(corsMiddleware);
@@ -32,8 +42,8 @@ class Application {
         this.app.use(generalLimiter);
 
         // Body parsing
-        this.app.use(express.json({ limit: '10mb' }));
-        this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+        this.app.use(express.json({ limit: '5mb' }));
+        this.app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
         logger.info('Middlewares initialized');
     }
@@ -46,7 +56,7 @@ class Application {
         this.app.get('/', (req, res) => {
             res.json({
                 success: true,
-                message: 'Event Management System API',
+                message: MESSAGES.SYSTEM.HEALTH,
                 version: '1.0.0',
                 timestamp: new Date().toISOString()
             });
@@ -54,9 +64,9 @@ class Application {
 
         // Catch-all for undefined routes
         this.app.use((req, res) => {
-            res.status(404).json({
+            res.status(STATUS_CODES.NOT_FOUND).json({
                 success: false,
-                message: `Can't find ${req.originalUrl} on this server!`
+                message: MESSAGES.SYSTEM.NOT_FOUND
             });
         });
 
@@ -74,4 +84,4 @@ class Application {
     }
 }
 
-module.exports = new Application();
+export default new Application();

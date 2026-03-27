@@ -1,6 +1,12 @@
-const { sendError } = require('../utils/response');
+import { sendError } from '../utils/response.js';
+import { STATUS_CODES, MESSAGES } from '../utils/constants.js';
 
-const validate = (schema) => {
+/**
+ * Validation midleware
+ * @module middleware
+ * @description Validation middleware for handling validation
+ */
+export const validate = (schema) => {
     return (req, res, next) => {
         const { error, value } = schema.validate(req.body, { abortEarly: false, stripUnknown: true });
 
@@ -10,7 +16,7 @@ const validate = (schema) => {
                 message: detail.message,
             }));
 
-            return sendError(res, 'Validation failed', 400, errors);
+            return sendError(res, MESSAGES.VALIDATION.BUILD_FAILED, STATUS_CODES.BAD_REQUEST, errors);
         }
 
         req.body = value;
@@ -18,7 +24,7 @@ const validate = (schema) => {
     };
 };
 
-const validateQuery = (schema) => {
+export const validateQuery = (schema) => {
     return (req, res, next) => {
         const { error, value } = schema.validate(req.query, { abortEarly: false, stripUnknown: true });
 
@@ -28,12 +34,10 @@ const validateQuery = (schema) => {
                 message: detail.message,
             }));
 
-            return sendError(res, 'Query validation failed', 400, errors);
+            return sendError(res, MESSAGES.VALIDATION.QUERY_FAILED, STATUS_CODES.BAD_REQUEST, errors);
         }
 
         req.query = value;
         next();
     };
 };
-
-module.exports = { validate, validateQuery };

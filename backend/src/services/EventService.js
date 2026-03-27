@@ -1,11 +1,23 @@
-const eventRepository = require('../repositories/EventRepository');
-const eventLogService = require('./EventLogService');
-const { convertToUTC, toUserTZ } = require('../utils/timezone');
-const { createError } = require('../utils/errorHandler');
-const { logger } = require('../utils/logger');
+import eventRepository from '../repositories/EventRepository.js';
+import eventLogService from './EventLogService.js';
+import { convertToUTC, toUserTZ } from '../utils/timezone.js';
+import { createError } from '../utils/errorHandler.js';
+import { logger } from '../utils/logger.js';
+import { STATUS_CODES, MESSAGES } from '../utils/constants.js';
 
+/**
+ * Event service
+ * @module services
+ * @description Event service for handling event dataa
+ */
 class EventService {
 
+    /**
+     * Format event for response
+     * @param {Object} event - Event object
+     * @param {string} targetTimezone - Target timezone
+     * @returns {Object} Formatted event
+     */
     _formatEventForResponse(event, targetTimezone) {
         const eventObj = event.toObject ? event.toObject() : event;
 
@@ -17,6 +29,11 @@ class EventService {
         return eventObj;
     }
 
+    /**
+     * Create event
+     * @param {Object} data - Event data
+     * @returns {Promise<Object>} Created event
+     */
     async createEvent(data) {
         logger.info('DEBUG: createEvent data: ' + JSON.stringify(data));
 
@@ -24,7 +41,7 @@ class EventService {
         const utcEnd = convertToUTC(data.endTime, data.timezone);
 
         if (utcEnd <= utcStart) {
-            throw createError('End time must be after start time', 400);
+            throw createError(MESSAGES.EVENT.INVALID_RANGE, STATUS_CODES.BAD_REQUEST);
         }
 
         const newEvent = await eventRepository.create({
@@ -36,12 +53,19 @@ class EventService {
         return this._formatEventForResponse(newEvent, data.timezone);
     }
 
+    /**
+     * Get events for profile
+     * @param {string} profileId - Profile ID
+     * @param {string} targetTimezone - Target timezone
+     * @param {number} page - Page number
+     * @param {number} limit - Limit count
+     * @returns {Promise<Object>} Events for profile
+     */
     async getEventsForProfile(profileId, targetTimezone, page = 1, limit = 10) {
-        if (!targetTimezone) throw createError('targetTimezone is required', 400);
+        if (!targetTimezone) throw createError(MESSAGES.EVENT.TZ_REQUIRED, STATUS_CODES.BAD_REQUEST);
 
         const skip = (page - 1) * limit;
 
-        // If profileId is provided, filter by it our fetch all.
         let result;
         if (profileId) {
             result = await eventRepository.findByProfileId(profileId, skip, limit);
@@ -62,20 +86,34 @@ class EventService {
         };
     }
 
+    /**
+     * Get event by ID
+     * @param {string} id - Event ID
+     * @param {string} targetTimezone - Target timezone
+     * @returns {Promise<Object>} Event by ID
+     */
     async getEventById(id, targetTimezone) {
-        if (!targetTimezone) throw createError('targetTimezone is required', 400);
+        if (!targetTimezone) throw createError(MESSAGES.EVENT.TZ_REQUIRED, STATUS_CODES.BAD_REQUEST);
 
         const event = await eventRepository.findByIdWithProfiles(id);
-        if (!event) throw createError('Event not found', 404);
+        if (!event) throw createError(MESSAGES.EVENT.NOT_FOUND, STATUS_CODES.NOT_FOUND);
 
         return this._formatEventForResponse(event, targetTimezone);
     }
 
+    /**
+     * Update event
+     * @param {string} id - Event ID
+     * @param {Object} data - Event data
+     * @param {string} updatedBy - Updated by
+     * @param {string} targetTimezone - Target timezone
+     * @returns {Promise<Object>} Updated event
+     */
     async updateEvent(id, data, updatedBy, targetTimezone) {
-        if (!targetTimezone) throw createError('targetTimezone is required for update logs', 400);
+        if (!targetTimezone) throw createError(MESSAGES.EVENT.FETCH_LOGS_ERROR, STATUS_CODES.BAD_REQUEST);
 
         const oldEvent = await eventRepository.findById(id);
-        if (!oldEvent) throw createError('Event not found', 404);
+        if (!oldEvent) throw createError(MESSAGES.EVENT.NOT_FOUND, STATUS_CODES.NOT_FOUND);
 
         const updateData = { ...data };
 
@@ -89,7 +127,7 @@ class EventService {
         const finalStart = updateData.startTime || oldEvent.startTime;
         const finalEnd = updateData.endTime || oldEvent.endTime;
         if (finalEnd <= finalStart) {
-            throw createError('End time must be after start time', 400);
+            throw createError(MESSAGES.EVENT.INVALID_RANGE, STATUS_CODES.BAD_REQUEST);
         }
 
         await eventLogService.logChanges(id, updatedBy, oldEvent, updateData);
@@ -100,4 +138,4 @@ class EventService {
     }
 }
 
-module.exports = new EventService();
+export default new EventService();

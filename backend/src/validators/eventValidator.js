@@ -1,6 +1,7 @@
-const Joi = require('joi');
+import Joi from 'joi';
 
-const createEventSchema = Joi.object({
+// Event validation schema
+export const createEventSchema = Joi.object({
     title: Joi.string().min(1).max(200).required(),
 
     profiles: Joi.array().items(
@@ -19,7 +20,8 @@ const createEventSchema = Joi.object({
     createdBy: Joi.string().required()
 });
 
-const updateEventSchema = Joi.object({
+// Update event validation schema
+export const updateEventSchema = Joi.object({
     title: Joi.string().min(1).max(200).optional(),
 
     profiles: Joi.array().items(
@@ -38,8 +40,3 @@ const updateEventSchema = Joi.object({
 
     updatedBy: Joi.string().required()
 }).min(2);
-
-module.exports = {
-    createEventSchema,
-    updateEventSchema
-};
