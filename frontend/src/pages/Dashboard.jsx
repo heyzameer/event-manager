@@ -53,15 +53,21 @@ export default function Dashboard() {
         const currentProfiles = activeEvent.profiles?.map(p => p._id || p.id || p) || [];
         const profilesChanged = JSON.stringify([...currentProfiles].sort()) !== JSON.stringify([...editForm.profileIds].sort());
 
-        const startISO = `${editForm.startDate}T${editForm.startTime}`;
-        const endISO = `${editForm.endDate}T${editForm.endTime}`;
+        const refTZ = activeEvent.timezone || viewTimezone;
+        const tzChanged = editForm.referenceTimezone !== refTZ;
+
+        const originalStartStr = dayjs.utc(activeEvent.startTime).tz(refTZ).format('YYYY-MM-DDTHH:mm');
+        const newStartStr = `${editForm.startDate}T${editForm.startTime}`;
+        
+        const originalEndStr = dayjs.utc(activeEvent.endTime).tz(refTZ).format('YYYY-MM-DDTHH:mm');
+        const newEndStr = `${editForm.endDate}T${editForm.endTime}`;
 
         return editForm.title !== activeEvent.title ||
             profilesChanged ||
-            editForm.referenceTimezone !== activeEvent.timezone ||
-            Math.floor(new Date(startISO).getTime() / 1000) !== Math.floor(new Date(activeEvent.startTime).getTime() / 1000) ||
-            Math.floor(new Date(endISO).getTime() / 1000) !== Math.floor(new Date(activeEvent.endTime).getTime() / 1000);
-    }, [editForm, activeEvent, modalMode]);
+            tzChanged ||
+            originalStartStr !== newStartStr ||
+            originalEndStr !== newEndStr;
+    }, [editForm, activeEvent, modalMode, viewTimezone]);
 
     // Debounce Logic
     useEffect(() => {
