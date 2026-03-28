@@ -111,6 +111,7 @@ export default function Dashboard() {
             
             const profile = profiles.find(p => (p._id || p.id) === selectedProfileId);
             if (profile) {
+                // eslint-disable-next-line
                 setFormData(prev => ({ ...prev, createdBy: profile.name }));
             }
         }
@@ -127,7 +128,7 @@ export default function Dashboard() {
             setIsProfileModalOpen(false);
             toast.success('Profile created!');
         } catch {
-            
+            // Error managed by global interceptor
         }
     };
 

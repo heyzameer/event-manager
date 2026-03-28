@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Button from '../components/Button';
 import Input from '../components/Input';
-import api from '../services/api';
 import toast from 'react-hot-toast';
 import { fetchEventsForProfile, createEventThunk } from '../store/eventsSlice';
 import dayjs from 'dayjs';
