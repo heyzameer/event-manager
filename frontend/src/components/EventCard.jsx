@@ -23,14 +23,8 @@ export default function EventCard({ event, profiles = [], viewTimezone = 'UTC', 
     return (
         <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1rem', border: '1px solid rgba(255,255,255,0.1)' }}>
             
-            {/* 1. Participants at Top */}
-            <div 
-                style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary-color)', marginBottom: '1.5rem', cursor: 'pointer' }}
-                onClick={(e) => { e.stopPropagation(); onClick(); }}
-            >
-                <Users size={18} />
-                <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{participantText}</span>
-            </div>
+            {/* Title Display */}
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', fontWeight: 700 }}>{event.title}</h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
                 {/* 2. Start Date/Time */}
@@ -58,8 +52,14 @@ export default function EventCard({ event, profiles = [], viewTimezone = 'UTC', 
                 </div>
             </div>
 
-            {/* Title Display */}
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: 700 }}>{event.title}</h3>
+            {/* 4. Participants */}
+            <div 
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary-color)', marginBottom: '1.5rem', cursor: 'pointer' }}
+                onClick={(e) => { e.stopPropagation(); onClick(); }}
+            >
+                <Users size={18} />
+                <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{participantText}</span>
+            </div>
 
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem', marginBottom: '1.5rem' }}>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
