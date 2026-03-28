@@ -7,7 +7,8 @@ import SearchableSelect from '../components/SearchableSelect';
 import MultiSelect from '../components/MultiSelect';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { fetchEventsForProfile } from '../store/eventsSlice';
+import { fetchEventsForProfile, updateEventThunk } from '../store/eventsSlice';
+import { ENDPOINTS } from '../config/endpoints';
 import dayjs from 'dayjs';
 import { Clock, Edit, History, Users } from 'lucide-react';
 
@@ -42,8 +43,8 @@ export default function EventDetails() {
         const fetchEventAndLogs = async () => {
             try {
                 const [resEvent, resLogs] = await Promise.all([
-                    api.get(`/events/${id}?timezone=${viewTimezone}`),
-                    api.get(`/events/${id}/logs?timezone=${viewTimezone}`)
+                    api.get(ENDPOINTS.EVENT_BY_ID(id), { params: { timezone: viewTimezone } }),
+                    api.get(ENDPOINTS.EVENT_LOGS(id), { params: { timezone: viewTimezone } })
                 ]);
                 setEventData(resEvent.data);
                 setLogs(resLogs.data || []);
@@ -81,22 +82,25 @@ export default function EventDetails() {
         }
 
         try {
-            await api.put(`/events/${id}`, {
-                title: editForm.title,
-                startTime: startLocal,
-                endTime: endLocal,
-                profiles: editForm.profileIds,
-                timezone: viewTimezone,
-                updatedBy: editForm.updatedBy
-            });
+            await dispatch(updateEventThunk({
+                id,
+                eventData: {
+                    title: editForm.title,
+                    startTime: startLocal,
+                    endTime: endLocal,
+                    profiles: editForm.profileIds,
+                    timezone: viewTimezone,
+                    updatedBy: editForm.updatedBy
+                }
+            })).unwrap();
             
             toast.success('Event updated!');
             setIsEditing(false);
             
             // Re-fetch local data
             const [resEvent, resLogs] = await Promise.all([
-                api.get(`/events/${id}?timezone=${viewTimezone}`),
-                api.get(`/events/${id}/logs?timezone=${viewTimezone}`)
+                api.get(ENDPOINTS.EVENT_BY_ID(id), { params: { timezone: viewTimezone } }),
+                api.get(ENDPOINTS.EVENT_LOGS(id), { params: { timezone: viewTimezone } })
             ]);
             setEventData(resEvent.data);
             setLogs(resLogs.data || []);

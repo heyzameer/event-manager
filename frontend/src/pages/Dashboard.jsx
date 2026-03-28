@@ -1,7 +1,7 @@
 import { useEffect, useState, memo, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchProfiles, setSelectedProfile } from '../store/profilesSlice';
-import { fetchEventsForProfile, setViewTimezone } from '../store/eventsSlice';
+import { fetchProfiles, setSelectedProfile, createProfileThunk } from '../store/profilesSlice';
+import { fetchEventsForProfile, setViewTimezone, createEventThunk, updateEventThunk } from '../store/eventsSlice';
 import EventCard from '../components/EventCard';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
@@ -11,6 +11,7 @@ import MultiSelect from '../components/MultiSelect';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
+import { ENDPOINTS } from '../config/endpoints';
 import { STANDARD_TIMEZONES } from '../config/timezones';
 import { Search } from 'lucide-react';
 
@@ -119,9 +120,9 @@ export default function Dashboard() {
         if (e) e.preventDefault();
         if (!newProfileName) return;
         try {
-            const res = await api.post('/profiles', { name: newProfileName });
+            const res = await dispatch(createProfileThunk({ name: newProfileName })).unwrap();
             dispatch(fetchProfiles());
-            dispatch(setSelectedProfile(res.data.id || res.data._id));
+            dispatch(setSelectedProfile(res.id || res._id));
             setNewProfileName('');
             setIsProfileModalOpen(false);
             toast.success('Profile created!');
@@ -150,14 +151,14 @@ export default function Dashboard() {
         }
 
         try {
-            await api.post('/events', {
+            await dispatch(createEventThunk({
                 title: formData.title,
                 profiles: formData.profileIds,
                 timezone: formData.creationTimezone,
                 startTime: startLocal,
                 endTime: endLocal,
                 createdBy: formData.createdBy
-            });
+            })).unwrap();
             toast.success('Event created successfully!');
             setFormData({ ...formData, title: '', startDate: '', startTime: '', endDate: '', endTime: '', profileIds: [] });
             if (selectedProfileId) dispatch(fetchEventsForProfile({ profileId: selectedProfileId, timezone: viewTimezone, page: 1, limit }));
@@ -184,7 +185,7 @@ export default function Dashboard() {
             });
         } else if (mode === 'logs') {
             try {
-                const res = await api.get(`/events/${event._id}/logs`, {
+                const res = await api.get(ENDPOINTS.EVENT_LOGS(event._id), {
                     params: { timezone: viewTimezone }
                 });
                 setEventLogs(res.data || []);
@@ -198,7 +199,7 @@ export default function Dashboard() {
         if (modalMode === 'logs' && activeEvent) {
             const fetchLogs = async () => {
                 try {
-                    const res = await api.get(`/events/${activeEvent._id}/logs`, {
+                    const res = await api.get(ENDPOINTS.EVENT_LOGS(activeEvent._id), {
                         params: { timezone: viewTimezone }
                     });
                     setEventLogs(res.data || []);
@@ -226,14 +227,17 @@ export default function Dashboard() {
         }
 
         try {
-            await api.put(`/events/${activeEvent._id}`, {
-                title: editForm.title,
-                startTime: startLocal,
-                endTime: endLocal,
-                profiles: editForm.profileIds,
-                timezone: editForm.referenceTimezone,
-                updatedBy: editForm.updatedBy
-            });
+            await dispatch(updateEventThunk({
+                id: activeEvent._id,
+                eventData: {
+                    title: editForm.title,
+                    startTime: startLocal,
+                    endTime: endLocal,
+                    profiles: editForm.profileIds,
+                    timezone: editForm.referenceTimezone,
+                    updatedBy: editForm.updatedBy
+                }
+            })).unwrap();
             toast.success('Event updated!');
             setModalMode(null);
             if (selectedProfileId) dispatch(fetchEventsForProfile({ profileId: selectedProfileId, timezone: viewTimezone, page, limit }));

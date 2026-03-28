@@ -6,7 +6,7 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { fetchEventsForProfile } from '../store/eventsSlice';
+import { fetchEventsForProfile, createEventThunk } from '../store/eventsSlice';
 import dayjs from 'dayjs';
 
 export default function CreateEvent() {
@@ -45,14 +45,14 @@ export default function CreateEvent() {
         }
 
         try {
-            await api.post('/events', {
+            await dispatch(createEventThunk({
                 title: formData.title,
                 profiles: [selectedProfileId],
                 timezone: viewTimezone,
                 startTime: startLocal,
                 endTime: endLocal,
                 createdBy: formData.createdBy
-            });
+            })).unwrap();
 
             toast.success('Event created successfully!');
 

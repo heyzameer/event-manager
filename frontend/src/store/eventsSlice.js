@@ -1,15 +1,40 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../services/api';
+import { ENDPOINTS } from '../config/endpoints';
 
 export const fetchEventsForProfile = createAsyncThunk(
     'events/fetchEventsForProfile',
     async ({ profileId, timezone, page = 1, limit = 10 }, { rejectWithValue }) => {
         try {
-            const response = await api.get('/events', { 
+            const response = await api.get(ENDPOINTS.EVENTS, { 
                 params: { profileId, timezone, page, limit } 
             });
             // Backend returns { events: [], pagination: {} }
             return response.data; 
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const createEventThunk = createAsyncThunk(
+    'events/createEvent',
+    async (eventData, { rejectWithValue }) => {
+        try {
+            const response = await api.post(ENDPOINTS.EVENTS, eventData);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const updateEventThunk = createAsyncThunk(
+    'events/updateEvent',
+    async ({ id, eventData }, { rejectWithValue }) => {
+        try {
+            const response = await api.put(ENDPOINTS.EVENT_BY_ID(id), eventData);
+            return response.data;
         } catch (error) {
             return rejectWithValue(error.message);
         }

@@ -1,11 +1,24 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../services/api';
+import { ENDPOINTS } from '../config/endpoints';
 
 export const fetchProfiles = createAsyncThunk(
     'profiles/fetchProfiles',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await api.get('/profiles');
+            const response = await api.get(ENDPOINTS.PROFILES);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const createProfileThunk = createAsyncThunk(
+    'profiles/createProfile',
+    async (profileData, { rejectWithValue }) => {
+        try {
+            const response = await api.post(ENDPOINTS.PROFILES, profileData);
             return response.data;
         } catch (error) {
             return rejectWithValue(error.message);
