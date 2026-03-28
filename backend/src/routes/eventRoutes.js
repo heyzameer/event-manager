@@ -1,6 +1,6 @@
 import express from 'express';
 const router = express.Router();
-import { eventController, eventLogController } from '../container.js';
+import { eventController, eventLogController } from '../container/index.js';
 import { validate } from '../middleware/validation.js';
 import { createEventSchema, updateEventSchema } from '../validators/eventValidator.js';
 
