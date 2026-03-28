@@ -2,9 +2,9 @@ import { Calendar, Users, Edit3, ClipboardList, Clock } from 'lucide-react';
 import dayjs from 'dayjs';
 
 export default function EventCard({ event, profiles = [], viewTimezone = 'UTC', onClick, onEdit, onViewLogs }) {
-    const formatFull = (d) => dayjs(d).tz(viewTimezone).format('MMM D, YYYY');
-    const formatTime = (d) => dayjs(d).tz(viewTimezone).format('h:mm A');
-    const formatAudit = (d) => dayjs(d).tz(viewTimezone).format('MMM D, YYYY [at] hh:mm A');
+    const formatFull = (d) => dayjs.utc(d).tz(viewTimezone).format('MMM D, YYYY');
+    const formatTime = (d) => dayjs.utc(d).tz(viewTimezone).format('h:mm A');
+    const formatAudit = (d) => dayjs.utc(d).tz(viewTimezone).format('MMM D, YYYY [at] hh:mm A');
 
     // Participant logic
     const participantCount = event.profiles?.length || 0;

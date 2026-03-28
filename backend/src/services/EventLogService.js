@@ -1,6 +1,6 @@
 import eventLogRepository from '../repositories/EventLogRepository.js';
 import Profile from '../models/Profile.js';
-import { toUserTZ } from '../utils/timezone.js';
+import { logger } from '../utils/logger.js';
 import { createError } from '../utils/errorHandler.js';
 import { STATUS_CODES, MESSAGES } from '../utils/constants.js';
 import dayjs from 'dayjs';
@@ -113,11 +113,7 @@ class EventLogService {
 
         const logs = await eventLogRepository.findByEventId(eventId);
 
-        return logs.map(log => {
-            const logObj = log.toObject();
-            logObj.timestamp = toUserTZ(logObj.timestamp, targetTimezone);
-            return logObj;
-        });
+        return logs.map(log => log.toObject());
     }
 }
 

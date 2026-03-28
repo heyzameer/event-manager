@@ -50,10 +50,10 @@ export default function EventDetails() {
 
                 setEditForm({
                     title: resEvent.data.title,
-                    startDate: dayjs(resEvent.data.startTime).tz(viewTimezone).format('YYYY-MM-DD'),
-                    startTime: dayjs(resEvent.data.startTime).tz(viewTimezone).format('HH:mm'),
-                    endDate: dayjs(resEvent.data.endTime).tz(viewTimezone).format('YYYY-MM-DD'),
-                    endTime: dayjs(resEvent.data.endTime).tz(viewTimezone).format('HH:mm'),
+                    startDate: dayjs.utc(resEvent.data.startTime).tz(viewTimezone).format('YYYY-MM-DD'),
+                    startTime: dayjs.utc(resEvent.data.startTime).tz(viewTimezone).format('HH:mm'),
+                    endDate: dayjs.utc(resEvent.data.endTime).tz(viewTimezone).format('YYYY-MM-DD'),
+                    endTime: dayjs.utc(resEvent.data.endTime).tz(viewTimezone).format('HH:mm'),
                     profileIds: resEvent.data.profiles || [],
                     updatedBy: ''
                 });
@@ -204,10 +204,10 @@ export default function EventDetails() {
                                 </div>
                                 <div>
                                     <p style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
-                                        {dayjs(eventData.startTime).tz(viewTimezone).format('dddd, MMMM D, YYYY')}
+                                        {dayjs.utc(eventData.startTime).tz(viewTimezone).format('dddd, MMMM D, YYYY')}
                                     </p>
                                     <p style={{ fontSize: '1.1rem', color: 'var(--primary-color)', fontWeight: 500 }}>
-                                        {dayjs(eventData.startTime).tz(viewTimezone).format('h:mm A')} — {dayjs(eventData.endTime).tz(viewTimezone).format('h:mm A')}
+                                        {dayjs.utc(eventData.startTime).tz(viewTimezone).format('h:mm A')} — {dayjs.utc(eventData.endTime).tz(viewTimezone).format('h:mm A')}
                                     </p>
                                     <p style={{ marginTop: '0.8rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                                         Viewing in <strong>{viewTimezone}</strong>
@@ -256,7 +256,7 @@ export default function EventDetails() {
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
                                         <span style={{ fontWeight: 600, color: 'var(--primary-color)' }}>{log.updatedBy}</span>
                                         <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                            {dayjs(log.timestamp).format('MMM D, YYYY • h:mm A')}
+                                            {dayjs.utc(log.timestamp).tz(viewTimezone).format('MMM D, YYYY • h:mm A')}
                                         </span>
                                     </div>
 

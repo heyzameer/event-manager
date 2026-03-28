@@ -12,10 +12,8 @@ export const createEventSchema = Joi.object({
 
     timezone: Joi.string().required(),
 
-    startTime: Joi.date().iso().required(),
-    endTime: Joi.date().iso().greater(Joi.ref('startTime')).required().messages({
-        'date.greater': 'End time cannot be before or equal to start time'
-    }),
+    startTime: Joi.string().required(),
+    endTime: Joi.string().required(),
 
     createdBy: Joi.string().required()
 });
@@ -30,13 +28,9 @@ export const updateEventSchema = Joi.object({
 
     timezone: Joi.string().optional(),
 
-    startTime: Joi.date().iso().optional(),
+    startTime: Joi.string().optional(),
 
-    endTime: Joi.date().iso().when('startTime', {
-        is: Joi.exist(),
-        then: Joi.date().greater(Joi.ref('startTime')),
-        otherwise: Joi.date()
-    }).optional(),
+    endTime: Joi.string().optional(),
 
     updatedBy: Joi.string().required()
 }).min(2);

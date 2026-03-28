@@ -101,11 +101,13 @@ export default function Dashboard() {
     useEffect(() => {
         if (selectedProfileId) {
             dispatch(fetchEventsForProfile({ profileId: selectedProfileId, timezone: viewTimezone, page, dispatch }));
+            
+            const profile = profiles.find(p => (p._id || p.id) === selectedProfileId);
+            if (profile) {
+                setFormData(prev => ({ ...prev, createdBy: profile.name }));
+            }
         }
-    }, [selectedProfileId, viewTimezone, page, dispatch]);
-
-    // Derived createdBy to avoid effect-based state sync
-    const effectiveCreatedBy = formData.createdBy || profiles.find(p => (p._id || p.id) === selectedProfileId)?.name || '';
+    }, [selectedProfileId, viewTimezone, page, dispatch, profiles]);
 
     const handleCreateProfile = async (e) => {
         if (e) e.preventDefault();
@@ -118,7 +120,7 @@ export default function Dashboard() {
             setIsProfileModalOpen(false);
             toast.success('Profile created!');
         } catch {
-            // Handled or ignored
+            
         }
     };
 
@@ -163,15 +165,16 @@ export default function Dashboard() {
         setModalMode(mode);
         if (mode === 'edit') {
             const refTZ = event.timezone || viewTimezone;
+            const currentProfile = profiles.find(p => (p._id || p.id) === selectedProfileId);
             setEditForm({
                 title: event.title,
-                startDate: dayjs(event.startTime).tz(refTZ).format('YYYY-MM-DD'),
-                startTime: dayjs(event.startTime).tz(refTZ).format('HH:mm'),
-                endDate: dayjs(event.endTime).tz(refTZ).format('YYYY-MM-DD'),
-                endTime: dayjs(event.endTime).tz(refTZ).format('HH:mm'),
+                startDate: dayjs.utc(event.startTime).tz(refTZ).format('YYYY-MM-DD'),
+                startTime: dayjs.utc(event.startTime).tz(refTZ).format('HH:mm'),
+                endDate: dayjs.utc(event.endTime).tz(refTZ).format('YYYY-MM-DD'),
+                endTime: dayjs.utc(event.endTime).tz(refTZ).format('HH:mm'),
                 profileIds: event.profiles?.map(p => p._id || p.id || p) || [],
                 referenceTimezone: refTZ,
-                updatedBy: ''
+                updatedBy: currentProfile?.name || ''
             });
         } else if (mode === 'logs') {
             try {
@@ -184,11 +187,29 @@ export default function Dashboard() {
             }
         }
     };
+    // Re-fetch logs if viewTimezone changes while modal is open
+    useEffect(() => {
+        if (modalMode === 'logs' && activeEvent) {
+            const fetchLogs = async () => {
+                try {
+                    const res = await api.get(`/events/${activeEvent._id}/logs`, {
+                        params: { timezone: viewTimezone }
+                    });
+                    setEventLogs(res.data || []);
+                } catch {
+                    // Handled or ignored
+                }
+            };
+            fetchLogs();
+        }
+    }, [viewTimezone, modalMode, activeEvent]);
 
     const handleUpdateEvent = async (e) => {
         e.preventDefault();
-        const currentProfile = profiles.find(p => (p._id || p.id) === selectedProfileId);
-        const updatedByName = currentProfile?.name || 'Unknown User';
+        if (!editForm.updatedBy) {
+            toast.error('Please specify who is updating this event');
+            return;
+        }
 
         const startLocal = `${editForm.startDate}T${editForm.startTime}`;
         const endLocal = `${editForm.endDate}T${editForm.endTime}`;
@@ -205,7 +226,7 @@ export default function Dashboard() {
                 endTime: endLocal,
                 profiles: editForm.profileIds,
                 timezone: editForm.referenceTimezone,
-                updatedBy: updatedByName
+                updatedBy: editForm.updatedBy
             });
             toast.success('Event updated!');
             setModalMode(null);
@@ -234,6 +255,7 @@ export default function Dashboard() {
                             if (p) {
                                 dispatch(setSelectedProfile(p._id || p.id));
                                 setPage(1);
+                                setFormData(prev => ({ ...prev, createdBy: p.name }));
                             }
                         }}
                     />
@@ -308,7 +330,7 @@ export default function Dashboard() {
                         </div>
 
                         <div style={{ marginBottom: '1.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                            Creating as: <strong style={{ color: 'var(--primary-color)' }}>{effectiveCreatedBy || 'No profile selected'}</strong>
+                            Creating as: <strong style={{ color: 'var(--primary-color)' }}>{formData.createdBy || 'No profile selected'}</strong>
                         </div>
 
                         <Button 
@@ -441,18 +463,16 @@ export default function Dashboard() {
                                 <div key={log._id} className="glass-panel" style={{ padding: '1rem' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.9rem' }}>
                                         <strong style={{ color: 'var(--primary-color)' }}>{log.updatedBy}</strong>
-                                        <span style={{ opacity: 0.6 }}>{dayjs(log.timestamp).format('MMM D, h:mm A')}</span>
+                                        <span style={{ opacity: 0.6 }}>{dayjs.utc(log.timestamp).tz(viewTimezone).format('MMM D, h:mm A')}</span>
                                     </div>
                                     <ul style={{ paddingLeft: '1.2rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                                         {log.changes.map((c, i) => (
                                             <li key={i}>
-                                                Changed <strong>{c.field}</strong>: 
-                                                {c.field === 'profiles' ? (
+                                                Changed <strong>{c.field}</strong>
+                                                {c.field === 'profiles' && (
                                                     <span style={{ color: 'var(--primary-color)', marginLeft: '4px', fontWeight: 600 }}>
-                                                        {c.newValue}
+                                                        : {c.newValue}
                                                     </span>
-                                                ) : (
-                                                    <span style={{ opacity: 0.7 }}> to {c.newValue}</span>
                                                 )}
                                             </li>
                                         ))}
@@ -506,7 +526,7 @@ export default function Dashboard() {
                         </div>
 
                         <div style={{ marginBottom: '1.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                            Updating as: <strong style={{ color: 'var(--primary-color)' }}>{formData.createdBy || 'Active Profile'}</strong>
+                            Updating as: <strong style={{ color: 'var(--primary-color)' }}>{editForm.updatedBy || 'Active Profile'}</strong>
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>

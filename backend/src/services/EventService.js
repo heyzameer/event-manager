@@ -1,6 +1,6 @@
 import eventRepository from '../repositories/EventRepository.js';
 import eventLogService from './EventLogService.js';
-import { convertToUTC, toUserTZ } from '../utils/timezone.js';
+import { convertToUTC } from '../utils/timezone.js';
 import { createError } from '../utils/errorHandler.js';
 import { logger } from '../utils/logger.js';
 import { STATUS_CODES, MESSAGES } from '../utils/constants.js';
@@ -18,15 +18,8 @@ class EventService {
      * @param {string} targetTimezone - Target timezone
      * @returns {Object} Formatted event
      */
-    _formatEventForResponse(event, targetTimezone) {
-        const eventObj = event.toObject ? event.toObject() : event;
-
-        eventObj.startTime = toUserTZ(eventObj.startTime, targetTimezone);
-        eventObj.endTime = toUserTZ(eventObj.endTime, targetTimezone);
-        eventObj.createdAt = toUserTZ(eventObj.createdAt, targetTimezone);
-        eventObj.updatedAt = toUserTZ(eventObj.updatedAt, targetTimezone);
-
-        return eventObj;
+    _formatEventForResponse(event) {
+        return event.toObject ? event.toObject() : event;
     }
 
     /**
