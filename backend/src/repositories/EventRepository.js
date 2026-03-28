@@ -22,7 +22,7 @@ class EventRepository extends BaseRepository {
 
         const [data, total] = await Promise.all([
             this.model.find(query)
-                .populate('profiles', 'name timezone')
+                .populate('profiles', 'name')
                 .sort({ startTime: 1 })
                 .skip(skip)
                 .limit(limit),
@@ -35,7 +35,7 @@ class EventRepository extends BaseRepository {
     async findAllEvents(skip = 0, limit = 10) {
         const [data, total] = await Promise.all([
             this.model.find()
-                .populate('profiles', 'name timezone')
+                .populate('profiles', 'name')
                 .sort({ startTime: 1 })
                 .skip(skip)
                 .limit(limit),
@@ -46,7 +46,7 @@ class EventRepository extends BaseRepository {
     }
 
     async findByIdWithProfiles(id) {
-        return await this.model.findById(id).populate('profiles', 'name timezone');
+        return await this.model.findById(id).populate('profiles', 'name');
     }
 }
 

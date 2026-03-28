@@ -23,8 +23,7 @@ class ProfileService {
         }
 
         return await this.profileRepository.create({
-            name: data.name,
-            timezone: data.timezone || 'UTC'
+            name: data.name
         });
     }
 

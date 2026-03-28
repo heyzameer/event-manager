@@ -11,11 +11,6 @@ const profileSchema = new mongoose.Schema({
         required: [true, 'Profile name is required'],
         trim: true,
         unique: true,
-    },
-    timezone: {
-        type: String,
-        required: [true, 'Timezone is required'],
-        default: 'UTC',
     }
 }, {
     timestamps: true
