@@ -1,5 +1,4 @@
 import BaseRepository from './BaseRepository.js';
-import Event from '../models/Event.js';
 
 /**
  * Event repository
@@ -7,8 +6,8 @@ import Event from '../models/Event.js';
  * @description Event repository for handling event data
  */
 class EventRepository extends BaseRepository {
-    constructor() {
-        super(Event);
+    constructor(model) {
+        super(model);
     }
 
     /**
@@ -33,7 +32,6 @@ class EventRepository extends BaseRepository {
         return { data, total };
     }
 
-    //with pagination
     async findAllEvents(skip = 0, limit = 10) {
         const [data, total] = await Promise.all([
             this.model.find()
@@ -52,4 +50,4 @@ class EventRepository extends BaseRepository {
     }
 }
 
-export default new EventRepository();
+export default EventRepository;

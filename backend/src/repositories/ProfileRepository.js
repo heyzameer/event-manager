@@ -1,5 +1,4 @@
 import BaseRepository from './BaseRepository.js';
-import Profile from '../models/Profile.js';
 
 /**
  * Profile repository
@@ -7,8 +6,8 @@ import Profile from '../models/Profile.js';
  * @description Profile repository for handling profile data
  */
 class ProfileRepository extends BaseRepository {
-    constructor() {
-        super(Profile);
+    constructor(model) {
+        super(model);
     }
 
     /**
@@ -16,7 +15,6 @@ class ProfileRepository extends BaseRepository {
      * @param {string} name - Profile name
      * @returns {Promise<Object>} Found profile
      */
-
     async findByName(name) {
         return await this.model.findOne({
             name: { $regex: new RegExp(`^${name}$`, 'i') }
@@ -24,4 +22,4 @@ class ProfileRepository extends BaseRepository {
     }
 }
 
-export default new ProfileRepository();
+export default ProfileRepository;

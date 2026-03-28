@@ -1,5 +1,3 @@
-import eventLogRepository from '../repositories/EventLogRepository.js';
-import Profile from '../models/Profile.js';
 import { logger } from '../utils/logger.js';
 import { createError } from '../utils/errorHandler.js';
 import { STATUS_CODES, MESSAGES } from '../utils/constants.js';
@@ -8,9 +6,18 @@ import dayjs from 'dayjs';
 /**
  * Event log service
  * @module services
- * @description Event log service for handling even log data
+ * @description Event log service for handling event log data
  */
 class EventLogService {
+    /**
+     * @param {Object} eventLogRepository - Injected EventLogRepository instance
+     * @param {Object} profileModel - Injected Mongoose Profile model
+     */
+    constructor(eventLogRepository, profileModel) {
+        this.eventLogRepository = eventLogRepository;
+        this.profileModel = profileModel;
+    }
+
     /**
      * Log changes
      * @param {string} eventId - Event ID
@@ -38,15 +45,15 @@ class EventLogService {
         }
 
         if (changes.length > 0) {
-            await eventLogRepository.create({ eventId, updatedBy, changes });
+            await this.eventLogRepository.create({ eventId, updatedBy, changes });
         }
     }
 
     /**
      * Get profile changes
-     * @param {Array<Object>} oldVal - Old profile
-     * @param {Array<Object>} newVal - New profile
-     * @returns {Promise<Object>} Profile changes
+     * @param {Array<Object>} oldVal - Old profiles
+     * @param {Array<Object>} newVal - New profiles
+     * @returns {Promise<Object|null>} Profile changes or null
      */
     async _getProfileChanges(oldVal, newVal) {
         const oldIds = (oldVal || []).map(p => (p._id || p.id || p).toString()).sort();
@@ -55,7 +62,7 @@ class EventLogService {
 
         if (!changed) return null;
 
-        const currentProfiles = await Profile.find({ _id: { $in: newVal } });
+        const currentProfiles = await this.profileModel.find({ _id: { $in: newVal } });
         const profileNames = currentProfiles.map(p => p.name).join(', ');
 
         return {
@@ -70,7 +77,7 @@ class EventLogService {
      * @param {string} field - Field name
      * @param {Date} oldVal - Old date
      * @param {Date} newVal - New date
-     * @returns {Object} Date changes
+     * @returns {Object|null} Date changes or null
      */
     _getDateChanges(field, oldVal, newVal) {
         const changed = new Date(oldVal).getTime() !== new Date(newVal).getTime();
@@ -88,7 +95,7 @@ class EventLogService {
      * @param {string} field - Field name
      * @param {*} oldVal - Old value
      * @param {*} newVal - New value
-     * @returns {Object} Value changes
+     * @returns {Object|null} Value changes or null
      */
     _getValueChanges(field, oldVal, newVal) {
         if (oldVal === newVal) return null;
@@ -111,10 +118,9 @@ class EventLogService {
             throw createError(MESSAGES.EVENT.FETCH_LOGS_ERROR, STATUS_CODES.BAD_REQUEST);
         }
 
-        const logs = await eventLogRepository.findByEventId(eventId);
-
+        const logs = await this.eventLogRepository.findByEventId(eventId);
         return logs.map(log => log.toObject());
     }
 }
 
-export default new EventLogService();
+export default EventLogService;

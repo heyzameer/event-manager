@@ -1,6 +1,6 @@
 import express from 'express';
 const router = express.Router();
-import profileController from '../controllers/ProfileController.js';
+import { profileController } from '../container.js';
 import { validate } from '../middleware/validation.js';
 import { createProfileSchema } from '../validators/profileValidator.js';
 

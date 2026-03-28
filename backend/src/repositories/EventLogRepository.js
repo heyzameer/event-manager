@@ -1,5 +1,4 @@
 import BaseRepository from './BaseRepository.js';
-import EventLog from '../models/EventLog.js';
 
 /**
  * Event log repository
@@ -7,8 +6,8 @@ import EventLog from '../models/EventLog.js';
  * @description Event log repository for handling event log data
  */
 class EventLogRepository extends BaseRepository {
-    constructor() {
-        super(EventLog);
+    constructor(model) {
+        super(model);
     }
 
     /**
@@ -21,4 +20,4 @@ class EventLogRepository extends BaseRepository {
     }
 }
 
-export default new EventLogRepository();
+export default EventLogRepository;
